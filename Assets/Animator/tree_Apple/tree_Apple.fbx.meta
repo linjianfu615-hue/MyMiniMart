@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: XX0e43ilV38/n2r8x7DiSPL922DYIRb68SAccTrx1hpZ+zSVGGiUuIQ=
+guid: CHxKvCL5W3ipzIfIgBhJkMTjlKGz/VC6Fy08BF6ZX9bO+n30TL3bOP4=
 ModelImporter:
   serializedVersion: 22361
   internalIDToNameTable: []
@@ -45,8 +45,8 @@ ModelImporter:
     lODScreenPercentages: []
     globalScale: 1
     meshCompression: 0
-    totalVerticesCount: 218
-    totalTrianglesCount: 204
+    totalVerticesCount: 236
+    totalTrianglesCount: 220
     addColliders: 0
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
@@ -93,8 +93,14 @@ ModelImporter:
       transformScaleState: 0
       isPossibleOverflow: 0
     virtualGeometryPlatformSettings: []
-    selectedVGMeshes: []
-    supportVGMeshes: []
+    selectedVGMeshes:
+    - index: 1
+      meshName: grassPatch01_TreeApple
+      meshGeometryBuffer: 0
+    supportVGMeshes:
+    - index: 1
+      meshName: grassPatch01_TreeApple
+      meshGeometryBuffer: 0
   tangentSpace:
     normalSmoothAngle: 60
     normalImportMode: 0

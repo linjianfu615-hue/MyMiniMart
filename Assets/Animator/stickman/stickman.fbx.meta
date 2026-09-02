@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: DHkbvS2vUX/fZOBpQTdmsU8J1WGtilX8wAffBP1K2r0s5P2z5ZYPQFE=
+guid: Dykdty3+UCgHeX3BeuAJfUojM693N6nxvgNqO77LhF7o5wC7By91Woo=
 ModelImporter:
   serializedVersion: 22361
   internalIDToNameTable: []
@@ -45,8 +45,8 @@ ModelImporter:
     lODScreenPercentages: []
     globalScale: 1
     meshCompression: 0
-    totalVerticesCount: 724
-    totalTrianglesCount: 1395
+    totalVerticesCount: 1504
+    totalTrianglesCount: 1963
     addColliders: 0
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
@@ -93,8 +93,26 @@ ModelImporter:
       transformScaleState: 0
       isPossibleOverflow: 0
     virtualGeometryPlatformSettings: []
-    selectedVGMeshes: []
-    supportVGMeshes: []
+    selectedVGMeshes:
+    - index: 0
+      meshName: shoe_Speed_L
+      meshGeometryBuffer: 0
+    - index: 1
+      meshName: shoe_Speed_R
+      meshGeometryBuffer: 0
+    - index: 3
+      meshName: net
+      meshGeometryBuffer: 0
+    supportVGMeshes:
+    - index: 0
+      meshName: shoe_Speed_L
+      meshGeometryBuffer: 0
+    - index: 1
+      meshName: shoe_Speed_R
+      meshGeometryBuffer: 0
+    - index: 3
+      meshName: net
+      meshGeometryBuffer: 0
   tangentSpace:
     normalSmoothAngle: 60
     normalImportMode: 0
