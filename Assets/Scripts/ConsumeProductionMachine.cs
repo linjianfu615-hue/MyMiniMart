@@ -58,7 +58,7 @@ public class ConsumeProductionMachine : BaseProductionMachine
         // 3. 将投入的物体设为槽位的子物体，并让它飞到槽位上
         inputItem.transform.SetParent(targetSlot);
         inputItem.transform.DOKill();
-        inputItem.transform.DOLocalJump(Vector3.zero, 0.5f, 1, 0.3f);
+        inputItem.transform.DOLocalJump(Vector3.zero, 0.01f, 1, 0.3f);
         inputItem.transform.DOLocalRotate(Vector3.zero, 0.3f);
 
         // 4. 将物体加入管理列表

@@ -11,17 +11,16 @@ public abstract class BaseProductionMachine : MonoBehaviour
     [Tooltip("目标产品预制体 (如: 西红柿、小麦、鸡蛋)")]
     public GameObject targetProductPrefab;
 
-    // 【新增】所有产品统一的初始生成点（比如：树的中心、草地的中心点）
-    [Tooltip("产品刚生成时的初始位置（如树干中心）")]
+    [Tooltip("产品刚生成时的初始位置（如树干中心），如果不填则默认使用机器自身的中心点")]
     public Transform rootSpawnPoint;
 
-    [Tooltip("按顺序配置每个产品的生成位置（如：树上的4个不同树枝空物体，或地上的9个网格空物体）")]
+    [Tooltip("按顺序配置每个产品的最终存放位置（如：树上的4个不同树枝空物体，或地上的9个网格空物体）")]
     public Transform[] spawnPoints;
 
     [Tooltip("存放产出物的父节点(方便层级管理，可为空)")]
     public Transform productContainer;
 
-    [Tooltip("生成时的弹跳动画时长")]
+    [Tooltip("生成时飞向目标点的动画时长")]
     public float spawnAnimDuration = 0.5f;
 
     /// <summary>
@@ -29,74 +28,116 @@ public abstract class BaseProductionMachine : MonoBehaviour
     /// </summary>
     public int MaxCapacity => spawnPoints != null ? spawnPoints.Length : 0;
 
-    // 当前已产出且未被收集的产品列表
+    /// <summary>
+    /// 精准记录每个槽位上当前绑定的物体。
+    /// 解决玩家中途拿走物品导致的槽位错乱和重叠Bug。
+    /// </summary>
+    protected GameObject[] slotOccupants;
+
+    /// <summary>
+    /// 存放“已经完全到达目标点，且可被玩家收集”的产品列表
+    /// </summary>
     protected List<GameObject> readyProducts = new List<GameObject>();
 
     /// <summary>
-    /// 核心生成逻辑，供子类在满足各自条件时（时间到了/吃饱了）调用
+    /// 判断机器的所有槽位是否都被占满
+    /// </summary>
+    public bool IsMachineFull
+    {
+        get
+        {
+            if (slotOccupants == null) return true;
+            // 遍历所有槽位，只要有一个坑位是空的(null)，就不算满
+            foreach (var occupant in slotOccupants)
+            {
+                if (occupant == null) return false;
+            }
+            return true;
+        }
+    }
+
+    protected virtual void Awake()
+    {
+        // 根据配置的生成点数量，初始化槽位占用数组
+        if (spawnPoints != null)
+        {
+            slotOccupants = new GameObject[spawnPoints.Length];
+        }
+    }
+
+    /// <summary>
+    /// 核心生成逻辑，供子类在满足各自条件时调用
     /// </summary>
     protected virtual void GenerateProduct()
     {
-        // 防错：如果没有配置生成点，或者容量已满，则停止生成
+        // 防错：如果没有配置生成点，则停止生成
         if (spawnPoints == null || spawnPoints.Length == 0) return;
-        if (readyProducts.Count >= MaxCapacity) return;
 
-        //获取当前对应的生成点 (例如列表里有0个产品，就用第0个位置生成)
-        Transform targetSpawnPoint = spawnPoints[readyProducts.Count];
+        // 1. 遍历寻找第一个为空(null)的槽位索引
+        int freeSlotIndex = -1;
+        for (int i = 0; i < slotOccupants.Length; i++)
+        {
+            if (slotOccupants[i] == null)
+            {
+                freeSlotIndex = i;
+                break;
+            }
+        }
 
-        // 【修改1】在根节点（rootSpawnPoint）实例化，而不是直接在目标点实例化
+        // 如果没有空槽位，说明已经满了，直接返回
+        if (freeSlotIndex == -1) return;
+
+        // 2. 获取目标生成点
+        Transform targetSpawnPoint = spawnPoints[freeSlotIndex];
         Vector3 startPos = rootSpawnPoint != null ? rootSpawnPoint.position : transform.position;
 
-        //实例化目标产品
+        // 3. 实例化目标产品
         GameObject newProduct = Instantiate(targetProductPrefab, startPos, Quaternion.identity);
 
-        //设置父节点存放
+        // 4. 【核心机制】立即将该空槽位标记为被此物品占用！防止动画期间其它生成的物品抢占同一个坑位
+        slotOccupants[freeSlotIndex] = newProduct;
+
+        // 5. 设置父节点以保持场景层级整洁
         if (productContainer != null)
-        {
             newProduct.transform.SetParent(productContainer);
-        }
         else
-        {
             newProduct.transform.SetParent(targetSpawnPoint);
-        }
 
-        // 加入成品列表
-        readyProducts.Add(newProduct);
+        newProduct.transform.localEulerAngles = Vector3.zero;
 
-        //设置旋转角度（0，0，0）
-        newProduct.transform.localEulerAngles = new Vector3(0, 0, 0);
+        // 6. 播放生成动画。传入回调函数，确保动画彻底播放完毕、物品到达树枝后，才加入成熟列表供玩家收集
+        PlaySpawnAnimation(newProduct, targetSpawnPoint.position, () =>
+        {
+            readyProducts.Add(newProduct);
+        });
 
-        // 【修改2】将目标点的位置传递给动画函数
-        PlaySpawnAnimation(newProduct, targetSpawnPoint.position);
-
+        // 触发额外的排列逻辑（供特殊的子类重写使用）
         ArrangeProducts();
     }
 
     /// <summary>
-    /// 通用的生成动画逻辑
+    /// 播放物品的生成和移动动画
     /// </summary>
-    protected virtual void PlaySpawnAnimation(GameObject obj, Vector3 targetPos)
+    protected virtual void PlaySpawnAnimation(GameObject obj, Vector3 targetPos, System.Action onComplete)
     {
-        // 初始大小设为0
+        // 【核心修复】：不要用 Vector3.one！
+        // 在 SetParent 之后，Unity 已经自动算好了这个物品为了保持真实大小，在这个鸡舍下应该有的 LocalScale（比如 0.01）
+        // 我们先把它原本正确的缩放值记录下来：
+        Vector3 targetScale = obj.transform.localScale;
+
+        // 然后把它缩小到0，准备播放“长出来”的动画
         obj.transform.localScale = Vector3.zero;
 
-        // 【修改3】弹性放大
-        obj.transform.DOScale(Vector3.one, spawnAnimDuration).SetEase(Ease.OutBack);
+        // 放大时，放大到刚才记录的 targetScale，而不是强制的 Vector3.one
+        obj.transform.DOScale(targetScale, spawnAnimDuration).SetEase(Ease.OutBack);
 
-        // 【修改4】删除了 DOLocalJump，改为从根节点平滑移动 (DOMove) 到目标点
-        // 使用 OutBack 或 OutQuad 曲线，会有飞过去并微微弹一下的感觉
-        obj.transform.DOMove(targetPos, spawnAnimDuration).SetEase(Ease.OutBack);
+        // 平滑移动到目标点
+        obj.transform.DOMove(targetPos, spawnAnimDuration)
+                     .SetEase(Ease.OutBack)
+                     .OnComplete(() => onComplete?.Invoke());
     }
 
-    /// <summary>
-    /// 物品排列逻辑（预留给子类重写）
-    /// 对于树（西红柿）和草（小麦）这种已经在各自 SpawnPoint 绝对位置生成的，不需要特殊处理。
-    /// 对于机器产出（同一点生成，再排成矩阵阵列的），可以在子类中 override 覆盖此方法。
-    /// </summary>
-    protected virtual void ArrangeProducts()
-    {
-        // 基类留空
-    }
+    protected virtual void ArrangeProducts() { }
 
     /// <summary>
     /// 供玩家或搬运工 (Worker) 收集产品的外部接口
@@ -104,19 +145,26 @@ public abstract class BaseProductionMachine : MonoBehaviour
     /// <returns>返回被收集的物品 GameObject，如果没有则返回 null</returns>
     public virtual GameObject CollectProduct()
     {
+        // 玩家只会从 readyProducts (完全成熟且已就位) 的列表里拿东西
         if (readyProducts.Count > 0)
         {
-            // 取出最后生成的一个产品
+            // 取出最后成熟的一个产品
             int lastIndex = readyProducts.Count - 1;
             GameObject product = readyProducts[lastIndex];
-
-            // 从当前机器的管理列表中移除
             readyProducts.RemoveAt(lastIndex);
 
-            // 返回给玩家，玩家脚本接管该物体的移动（如飞向玩家背包）
+            // 【核心机制】玩家拿走物品后，遍历占用数组，精准清空对应的那个具体槽位
+            for (int i = 0; i < slotOccupants.Length; i++)
+            {
+                if (slotOccupants[i] == product)
+                {
+                    slotOccupants[i] = null; // 释放槽位，允许机器在该位置继续生产新物品
+                    break;
+                }
+            }
+
             return product;
         }
-
-        return null; // 没有产品可收集
+        return null;
     }
 }
