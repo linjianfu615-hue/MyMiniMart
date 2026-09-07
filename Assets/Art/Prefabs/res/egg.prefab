@@ -96,6 +96,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 5060655963145455330}
+  - component: {fileID: 6443962951804050344}
   m_Layer: 0
   m_HasEditorInfo: 1
   m_Name: egg
@@ -120,3 +121,16 @@ Transform:
   - {fileID: 3014556047631319374}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6443962951804050344
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5253258802315734709}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 869ce3b51166346e1814b7741a87fa81, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemType: 2

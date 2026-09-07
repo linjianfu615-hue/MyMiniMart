@@ -114,20 +114,25 @@ public class PlayerController : BaseCharacterController
             // 获取触发碰撞体的名字，用来严格区分玩家到底站在输入区还是输出区
             string colliderName = other.name;
 
-            Debug.Log("colliderName:" + colliderName);
             // 1. 玩家站在【输入区】(如命名为 InputCollider)
             if (colliderName.Contains("Input") && HasItems)
             {
                 GameObject topItem = PeekTopItem();
                 if (topItem != null)
                 {
-                    ItemType currentItemType = consumeMachine.requiredInputType;
+                    // 【核心修改】：获取玩家手里这个物体真实的身份标签
+                    ItemData itemData = topItem.GetComponent<ItemData>();
 
-                    // 尝试交付物品，如果机器收下了，玩家再移除手里的物品
-                    if (consumeMachine.TryReceiveInput(currentItemType, topItem))
+                    if (itemData != null)
                     {
-                        RemoveTopItem();
-                        lastInteractTime = Time.time;
+                        ItemType currentItemType = itemData.itemType;
+
+                        // 尝试交付物品，TryReceiveInput内部会比对 currentItemType 是否等于 requiredInputType
+                        if (consumeMachine.TryReceiveInput(currentItemType, topItem))
+                        {
+                            RemoveTopItem();
+                            lastInteractTime = Time.time;
+                        }
                     }
                 }
             }

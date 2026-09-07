@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 2156486689087472041}
+  - component: {fileID: 1991898251823427009}
   m_Layer: 0
   m_HasEditorInfo: 1
   m_Name: veg_Tomato
@@ -33,6 +34,19 @@ Transform:
   - {fileID: 8937992165861245221}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1991898251823427009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6845270605631971619}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 869ce3b51166346e1814b7741a87fa81, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemType: 3
 --- !u!1 &9078111486397123625
 GameObject:
   m_ObjectHideFlags: 0

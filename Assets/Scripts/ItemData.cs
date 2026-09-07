@@ -2,7 +2,6 @@ using UnityEngine;
 
 /// <summary>
 /// 全局物品类型枚举 (Global Enum)
-/// 可以在任何脚本中直接通过 ItemType.Tomato 来调用
 /// </summary>
 public enum ItemType
 {
@@ -18,19 +17,11 @@ public enum ItemType
 }
 
 /// <summary>
-/// 物品数据配置类（基础结构）
-/// 加上 [System.Serializable] 后，可以在 Unity 属性面板中直接可视化配置
+/// 物品的身份标签，挂载在各种物品的预制体上
 /// </summary>
-[System.Serializable]
-public class ItemData
+public class ItemData : MonoBehaviour
 {
     [Header("物品类型")]
+    [Tooltip("在预制体面板中选择该物品的真实类型")]
     public ItemType itemType;
-
-    [Header("物品预制体 (用于生成和掉落)")]
-    public GameObject itemPrefab;
-
-    // 如果后续你需要做UI背包或商店，可以取消下面这行的注释
-    // [Header("物品UI图标")]
-    // public Sprite itemIcon; 
 }
