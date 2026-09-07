@@ -69,7 +69,7 @@ public class CustomerAI : MonoBehaviour
             case CustomerState.Entering:
                 if (targetShelves.Count > 0)
                 {
-                    MoveToDestination(targetShelves[currentShelfIndex].transform.position);
+                    // MoveToDestination(targetShelves[currentShelfIndex].transform.position);
                     SwitchState(CustomerState.Shopping);
                 }
                 else
@@ -116,7 +116,7 @@ public class CustomerAI : MonoBehaviour
         {
             case CustomerState.Shopping:
                 // 到达了当前货架，开始挑选
-                StartCoroutine(PickItemFromShelfCoroutine(targetShelves[currentShelfIndex]));
+                // StartCoroutine(PickItemFromShelfCoroutine(targetShelves[currentShelfIndex]));
                 break;
 
             case CustomerState.WaitingInQueue:
@@ -134,34 +134,34 @@ public class CustomerAI : MonoBehaviour
         }
     }
 
-    // 挑选货物的行为协程
-    private IEnumerator PickItemFromShelfCoroutine(StoreShelf shelf)
-    {
-        // 站立等待一段时间，模拟挑选
-        yield return new WaitForSeconds(shoppingDurationPerRack);
+    // // 挑选货物的行为协程
+    // private IEnumerator PickItemFromShelfCoroutine(StoreShelf shelf)
+    // {
+    //     // 站立等待一段时间，模拟挑选
+    //     yield return new WaitForSeconds(shoppingDurationPerRack);
 
-        // 尝试从货架拿走商品
-        if (shelf.TryCustomerPurchase(out int price))
-        {
-            purchasedItems.Add(shelf.targetItemID);
-            // 记录商品单价，结账时算总账
-            if (!itemPrices.ContainsKey(shelf.targetItemID))
-                itemPrices[shelf.targetItemID] = price;
+    //     // 尝试从货架拿走商品
+    //     if (shelf.TryCustomerPurchase(out int price))
+    //     {
+    //         purchasedItems.Add(shelf.targetItemID);
+    //         // 记录商品单价，结账时算总账
+    //         if (!itemPrices.ContainsKey(shelf.targetItemID))
+    //             itemPrices[shelf.targetItemID] = price;
 
-            // 【视觉表现】在此处可以实例化一个小水果放入顾客手提篮里
-        }
+    //         // 【视觉表现】在此处可以实例化一个小水果放入顾客手提篮里
+    //     }
 
-        // 决定下一个去向
-        currentShelfIndex++;
-        if (currentShelfIndex < targetShelves.Count)
-        {
-            MoveToDestination(targetShelves[currentShelfIndex].transform.position);
-        }
-        else
-        {
-            SwitchState(CustomerState.GoingToCheckout);
-        }
-    }
+    //     // 决定下一个去向
+    //     currentShelfIndex++;
+    //     if (currentShelfIndex < targetShelves.Count)
+    //     {
+    //         MoveToDestination(targetShelves[currentShelfIndex].transform.position);
+    //     }
+    //     else
+    //     {
+    //         SwitchState(CustomerState.GoingToCheckout);
+    //     }
+    // }
 
     private IEnumerator RetryJoinQueueCoroutine()
     {

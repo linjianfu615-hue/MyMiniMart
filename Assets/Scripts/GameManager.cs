@@ -7,8 +7,8 @@ using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
-    [Header("场景中需要履约存档的建筑群")]
-    public List<BaseStructure> allStructures;
+    // [Header("场景中需要履约存档的建筑群")]
+    // public List<BaseStructure> allStructures;
 
     // 伪代码定义玩家引用
     // public PlayerController player; 
@@ -40,16 +40,16 @@ public class GameManager : MonoBehaviour
         root.playerData.playerCapacityLevel = 1;
 
         // 2. 采集所有建筑状态
-        foreach (var structObj in allStructures)
-        {
-            StructureSaveData sData = new StructureSaveData
-            {
-                structureID = structObj.structureID,
-                isUnlocked = structObj.gameObject.activeSelf, // 如果物体隐藏代表未解锁
-                currentItemCount = structObj.CurrentCount
-            };
-            root.structuresData.Add(sData);
-        }
+        // foreach (var structObj in allStructures)
+        // {
+        //     StructureSaveData sData = new StructureSaveData
+        //     {
+        //         structureID = structObj.structureID,
+        //         isUnlocked = structObj.gameObject.activeSelf, // 如果物体隐藏代表未解锁
+        //         currentItemCount = structObj.CurrentCount
+        //     };
+        //     root.structuresData.Add(sData);
+        // }
 
         SaveManager.Instance.SaveGame(root);
     }
@@ -67,16 +67,16 @@ public class GameManager : MonoBehaviour
         // wallet.SetMoney(root.playerData.currentMoney);
 
         // 2. 恢复场景设施
-        foreach (var sData in root.structuresData)
-        {
-            // 在列表中匹配对应的物体
-            BaseStructure match = allStructures.Find(x => x.structureID == sData.structureID);
-            if (match != null)
-            {
-                match.gameObject.SetActive(sData.isUnlocked);
+        // foreach (var sData in root.structuresData)
+        // {
+        //     // 在列表中匹配对应的物体
+        //     BaseStructure match = allStructures.Find(x => x.structureID == sData.structureID);
+        //     if (match != null)
+        //     {
+        //         match.gameObject.SetActive(sData.isUnlocked);
 
-                // 还可以根据 sData.currentItemCount 用循环给它塞入对应数量的初始商品
-            }
-        }
+        //         // 还可以根据 sData.currentItemCount 用循环给它塞入对应数量的初始商品
+        //     }
+        // }
     }
 }
