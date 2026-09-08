@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 2954822019169458205}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: OutputSlots (1)
   m_TagString: Untagged
@@ -41,7 +41,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 660707888278138246}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigTail2
   m_TagString: Untagged
@@ -74,7 +74,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 3355755216453891618}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigLArm2_end
   m_TagString: Untagged
@@ -106,7 +106,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 87407024026748570}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigRLegPlatform
   m_TagString: Untagged
@@ -139,7 +139,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 5920132280166835195}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigLLegAnkle
   m_TagString: Untagged
@@ -174,7 +174,7 @@ GameObject:
   - component: {fileID: 3258287644362650958}
   - component: {fileID: 8981728330505573266}
   - component: {fileID: 4856850566590287676}
-  m_Layer: 0
+  m_Layer: 6
   m_HasEditorInfo: 1
   m_Name: chicken_Nest
   m_TagString: Untagged
@@ -259,7 +259,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 7245322836096462104}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: InputWorkerSlot
   m_TagString: Untagged
@@ -291,7 +291,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 8646368990946562806}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigLLegFoot1
   m_TagString: Untagged
@@ -324,7 +324,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 1034303797507889386}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigRArm1
   m_TagString: Untagged
@@ -357,7 +357,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 6418016458293161015}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: MachineBoostPFX
   m_TagString: Untagged
@@ -392,7 +392,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 9178480318333947753}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigRLegFoot1
   m_TagString: Untagged
@@ -425,7 +425,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 2318059085046600117}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: OutputSlots (3)
   m_TagString: Untagged
@@ -457,7 +457,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 7380873777738707951}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigRLeg1
   m_TagString: Untagged
@@ -490,7 +490,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 284706255920285806}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigNeck
   m_TagString: Untagged
@@ -523,7 +523,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 808719452197763001}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigLLegPlatform
   m_TagString: Untagged
@@ -559,7 +559,7 @@ GameObject:
   - component: {fileID: 4736589781892680793}
   - component: {fileID: 809383336250297081}
   - component: {fileID: 4074712008800717879}
-  m_Layer: 8
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: InputCollider
   m_TagString: Untagged
@@ -665,7 +665,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 4345934061632836135}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigRLegFoot1_end
   m_TagString: Untagged
@@ -697,7 +697,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 7418750675041824884}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: chicken
   m_TagString: Untagged
@@ -731,7 +731,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 5572015716616753442}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigSpine
   m_TagString: Untagged
@@ -766,7 +766,7 @@ GameObject:
   - component: {fileID: 4875131125962949418}
   - component: {fileID: 5651262342741037938}
   - component: {fileID: 5425629142489517861}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: "\u9E21\u820D"
   m_TagString: Untagged
@@ -825,13 +825,13 @@ MonoBehaviour:
   rootSpawnPoint: {fileID: 4512009951069758693}
   spawnPoints:
   - {fileID: 7174282332415755584}
-  - {fileID: 2954822019169458205}
-  - {fileID: 4662858226209910049}
-  - {fileID: 2318059085046600117}
-  - {fileID: 3038683172477199031}
+  - {fileID: 5673729584530300251}
   - {fileID: 1178055843669504874}
   - {fileID: 7657093807871278398}
-  - {fileID: 5673729584530300251}
+  - {fileID: 2318059085046600117}
+  - {fileID: 3038683172477199031}
+  - {fileID: 2954822019169458205}
+  - {fileID: 4662858226209910049}
   productContainer: {fileID: 0}
   spawnAnimDuration: 0.5
   requiredInputType: 3
@@ -840,12 +840,14 @@ MonoBehaviour:
   inputSlots:
   - {fileID: 8336412423621430117}
   - {fileID: 2636961988745226720}
-  - {fileID: 382129636799247169}
-  - {fileID: 5228490549732064607}
-  - {fileID: 2801531979741685048}
   - {fileID: 1431168786277298315}
   - {fileID: 287346363820398626}
+  - {fileID: 2801531979741685048}
   - {fileID: 60216735514424381}
+  - {fileID: 5228490549732064607}
+  - {fileID: 382129636799247169}
+  consumePoint: {fileID: 4862101337918361262}
+  consumeAnimDuration: 0.3
   animComponent: {fileID: 5651262342741037938}
   idleAnimName: chicken_TurnHead
   workAnimName: chicken_Eat
@@ -858,7 +860,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 3038683172477199031}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: OutputSlots (4)
   m_TagString: Untagged
@@ -874,8 +876,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3073397447121720997}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.01, y: 0.022499999, z: 0.01}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.009999998, y: 0.022499999, z: 0.01}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -890,7 +892,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 7174282332415755584}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: OutputSlots
   m_TagString: Untagged
@@ -922,7 +924,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 1445904357960483292}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigRLegAnkle
   m_TagString: Untagged
@@ -958,7 +960,7 @@ GameObject:
   - component: {fileID: 3662674999744125611}
   - component: {fileID: 4395030539562002016}
   - component: {fileID: 8516277707963158424}
-  m_Layer: 8
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: OutCollider
   m_TagString: Untagged
@@ -1064,7 +1066,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 7975160287925013510}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigLLegFoot1_end
   m_TagString: Untagged
@@ -1096,7 +1098,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 5634066612782836616}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: levelTextSlot
   m_TagString: Untagged
@@ -1128,7 +1130,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 60216735514424381}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: InputSlots (7)
   m_TagString: Untagged
@@ -1160,7 +1162,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 6845506897660359917}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigRLegPlatform_end
   m_TagString: Untagged
@@ -1304,7 +1306,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 8336412423621430117}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: InputSlots
   m_TagString: Untagged
@@ -1336,7 +1338,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 2316454160359016075}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigLLegPlatform_end
   m_TagString: Untagged
@@ -1368,7 +1370,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 4662858226209910049}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: OutputSlots (2)
   m_TagString: Untagged
@@ -1400,7 +1402,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 1772595421991324693}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: BigGlow
   m_TagString: Untagged
@@ -1432,7 +1434,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 5149612518717308408}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigTail2_end
   m_TagString: Untagged
@@ -1464,7 +1466,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 8303375272986660807}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: GlowBits
   m_TagString: Untagged
@@ -1496,7 +1498,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 287346363820398626}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: InputSlots (6)
   m_TagString: Untagged
@@ -1528,7 +1530,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 5200398278909467070}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigPelvis
   m_TagString: Untagged
@@ -1564,7 +1566,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 2636961988745226720}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: InputSlots (1)
   m_TagString: Untagged
@@ -1596,7 +1598,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 4862101337918361262}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: FactoryInputSlot
   m_TagString: Untagged
@@ -1628,7 +1630,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 3696830532133165258}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigLArm1
   m_TagString: Untagged
@@ -1661,7 +1663,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 7498588990331564169}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigTail1
   m_TagString: Untagged
@@ -1694,7 +1696,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 6171083290193534520}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigLArm2
   m_TagString: Untagged
@@ -1727,7 +1729,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 1431168786277298315}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: InputSlots (5)
   m_TagString: Untagged
@@ -1759,7 +1761,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 2801531979741685048}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: InputSlots (4)
   m_TagString: Untagged
@@ -1791,7 +1793,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 2575766399687731459}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: inputRequirementTextSlot
   m_TagString: Untagged
@@ -1823,7 +1825,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 4512009951069758693}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: DummySpawnPos
   m_TagString: Untagged
@@ -1855,7 +1857,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 3974091108819466804}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: WorkerSlot
   m_TagString: Untagged
@@ -1887,7 +1889,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 2480556655465920184}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigLLeg1
   m_TagString: Untagged
@@ -1920,7 +1922,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 318009337546263809}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: Animal_Chicken
   m_TagString: Untagged
@@ -1963,7 +1965,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 3023881373848943368}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigHead_end
   m_TagString: Untagged
@@ -1995,7 +1997,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 276635204488956440}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigRArm2
   m_TagString: Untagged
@@ -2028,7 +2030,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 2073189931380993113}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: Mat_Input_Gray
   m_TagString: Untagged
@@ -2051,12 +2053,12 @@ Transform:
   m_Children:
   - {fileID: 8336412423621430117}
   - {fileID: 2636961988745226720}
-  - {fileID: 382129636799247169}
-  - {fileID: 5228490549732064607}
-  - {fileID: 2801531979741685048}
   - {fileID: 1431168786277298315}
   - {fileID: 287346363820398626}
+  - {fileID: 2801531979741685048}
   - {fileID: 60216735514424381}
+  - {fileID: 5228490549732064607}
+  - {fileID: 382129636799247169}
   m_Father: {fileID: 318009337546263809}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7099840902342658616
@@ -2068,7 +2070,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 5228490549732064607}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: InputSlots (3)
   m_TagString: Untagged
@@ -2100,7 +2102,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 2744291329640460064}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigLLeg2
   m_TagString: Untagged
@@ -2133,7 +2135,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 5677016294462149639}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigRibcage
   m_TagString: Untagged
@@ -2168,7 +2170,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 3416886072987990734}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigRLeg2
   m_TagString: Untagged
@@ -2201,7 +2203,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 382129636799247169}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: InputSlots (2)
   m_TagString: Untagged
@@ -2233,7 +2235,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 5135189909941661886}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigRArm2_end
   m_TagString: Untagged
@@ -2265,7 +2267,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 6209044531143467273}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: RigHead
   m_TagString: Untagged
@@ -2298,7 +2300,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 5673729584530300251}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: OutputSlots 3
   m_TagString: Untagged
@@ -2330,7 +2332,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 2609976956077860752}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: Mat_Output (1)
   m_TagString: Untagged
@@ -2352,13 +2354,13 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7174282332415755584}
-  - {fileID: 2954822019169458205}
-  - {fileID: 4662858226209910049}
-  - {fileID: 2318059085046600117}
-  - {fileID: 3038683172477199031}
+  - {fileID: 5673729584530300251}
   - {fileID: 1178055843669504874}
   - {fileID: 7657093807871278398}
-  - {fileID: 5673729584530300251}
+  - {fileID: 2318059085046600117}
+  - {fileID: 3038683172477199031}
+  - {fileID: 2954822019169458205}
+  - {fileID: 4662858226209910049}
   m_Father: {fileID: 318009337546263809}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8243562354732710508
@@ -2370,7 +2372,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 5542394308938248135}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: Rig_Chicken_Eat
   m_TagString: Untagged
@@ -2405,7 +2407,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 5132282041020655492}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: HexagonFloor
   m_TagString: Untagged
@@ -2437,7 +2439,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 1178055843669504874}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: OutputSlots 1
   m_TagString: Untagged
@@ -2469,7 +2471,7 @@ GameObject:
   serializedVersion: 7
   m_Component:
   - component: {fileID: 7657093807871278398}
-  m_Layer: 0
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: OutputSlots 2
   m_TagString: Untagged

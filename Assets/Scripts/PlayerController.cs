@@ -1,4 +1,5 @@
 using UnityEngine;
+using DG.Tweening;
 
 /// <summary>
 /// 玩家专属控制器，处理玩家的触摸输入以及与环境触发器的智能交互
@@ -90,45 +91,98 @@ public class PlayerController : BaseCharacterController
         MoveAndRotate(moveDirection);
     }
 
+    // ==========================================
+    // 视觉反馈：玩家靠近时放大机器/货架
+    // ==========================================
+    // 用一个字典自动记录每个地面碰撞体原本的初始缩放比例，防止变形
+    private System.Collections.Generic.Dictionary<Transform, Vector3> originalScales = new System.Collections.Generic.Dictionary<Transform, Vector3>();
+    private void OnTriggerEnter(Collider other)
+    {
+        // 如果碰到的属于交互区域
+        if (IsInteractableZone(other))
+        {
+            Transform target = other.transform; // 只获取当前碰到的地面物体（不是整个货架）
+
+            // 第一次碰到时，记录这个地面真正的 Scale
+            if (!originalScales.ContainsKey(target))
+            {
+                originalScales[target] = target.localScale;
+            }
+
+            target.DOKill();
+            // 在它原有比例的基础上，放大 1.1 倍
+            target.DOScale(originalScales[target] * 1.1f, 0.2f).SetEase(Ease.OutBack);
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (IsInteractableZone(other))
+        {
+            Transform target = other.transform;
+
+            if (originalScales.ContainsKey(target))
+            {
+                target.DOKill();
+                // 离开时，精确恢复到最初记录的大小
+                target.DOScale(originalScales[target], 0.2f).SetEase(Ease.OutQuad);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 判断碰到的碰撞体是否属于可交互设施（货架或机器）
+    /// </summary>
+    private bool IsInteractableZone(Collider other)
+    {
+        // 只要它的父级或自身挂载了这两个管理器之一，就说明它是机器/货架的功能区
+        return other.GetComponentInParent<ShelfManager>() != null ||
+               other.GetComponentInParent<BaseProductionMachine>() != null;
+    }
+
+    /// <summary>
+    /// 统一获取可交互物体（货架或机器）的根节点 Transform
+    /// </summary>
+    private Transform GetInteractableRoot(Collider other)
+    {
+        // 检查碰到的碰撞体父级是不是货架
+        ShelfManager shelf = other.GetComponentInParent<ShelfManager>();
+        if (shelf != null) return shelf.transform;
+
+        // 检查碰到的碰撞体父级是不是生产/消耗机器
+        BaseProductionMachine machine = other.GetComponentInParent<BaseProductionMachine>();
+        if (machine != null) return machine.transform;
+
+        return null; // 都不是则返回 null，不触发缩放
+    }
+
     /// <summary>
     /// 触发器区域智能交互：站在输出区拿货，站在输入区送货。
-    /// 需要各机器周边配置带 Is Trigger 的 Collider。
     /// </summary>
     private void OnTriggerStay(Collider other)
     {
         // 冷却时间控制
         if (Time.time - lastInteractTime < interactCooldown) return;
 
-        // 尝试获取机器基类组件
-        BaseProductionMachine baseMachine = other.GetComponentInParent<BaseProductionMachine>();
-        if (baseMachine == null) return;
-
-        // 尝试将其转换为“消耗型机器”（如果转换失败，说明它是西红柿树这样的全自动机器）
-        ConsumeProductionMachine consumeMachine = baseMachine as ConsumeProductionMachine;
-
         // ==========================================
-        // 场景 1：如果碰到的机器是【消耗型机器】（如鸡舍、磨粉机）
+        // 场景 3：优先判断如果碰到的物体是【货架】
         // ==========================================
-        if (consumeMachine != null)
+        ShelfManager shelf = other.GetComponentInParent<ShelfManager>();
+        if (shelf != null)
         {
-            // 获取触发碰撞体的名字，用来严格区分玩家到底站在输入区还是输出区
             string colliderName = other.name;
-
-            // 1. 玩家站在【输入区】(如命名为 InputCollider)
-            if (colliderName.Contains("Input") && HasItems)
+            // 玩家站在货架的碰撞体（如 InputCollider）内，且手里有东西，且货架没满
+            if (colliderName.Contains("Input") && HasItems && !shelf.IsFull)
             {
+                // 看一眼手里最上面是什么
                 GameObject topItem = PeekTopItem();
                 if (topItem != null)
                 {
-                    // 【核心修改】：获取玩家手里这个物体真实的身份标签
                     ItemData itemData = topItem.GetComponent<ItemData>();
-
                     if (itemData != null)
                     {
-                        ItemType currentItemType = itemData.itemType;
-
-                        // 尝试交付物品，TryReceiveInput内部会比对 currentItemType 是否等于 requiredInputType
-                        if (consumeMachine.TryReceiveInput(currentItemType, topItem))
+                        // 尝试把手里的东西放上货架
+                        if (shelf.TryAddProduct(itemData.itemType, topItem))
                         {
                             RemoveTopItem();
                             lastInteractTime = Time.time;
@@ -136,30 +190,63 @@ public class PlayerController : BaseCharacterController
                     }
                 }
             }
-            // 2. 玩家站在【输出区】(如命名为 OutCollider)
-            else if (colliderName.Contains("Out") && !IsFull)
+            // 碰到了货架执行完逻辑后，直接结束本次触发，不用再往下找机器了
+            return;
+        }
+
+        // ==========================================
+        // 场景 1 & 2：如果碰到的不是货架，尝试获取【机器基类组件】
+        // ==========================================
+        BaseProductionMachine baseMachine = other.GetComponentInParent<BaseProductionMachine>();
+        if (baseMachine != null)
+        {
+            ConsumeProductionMachine consumeMachine = baseMachine as ConsumeProductionMachine;
+
+            // 场景 1：碰到了【消耗型机器】（如鸡舍）
+            if (consumeMachine != null)
             {
-                GameObject product = consumeMachine.CollectProduct();
-                if (product != null)
+                string colliderName = other.name;
+
+                // 站在【输入区】
+                if (colliderName.Contains("Input") && HasItems)
                 {
-                    AddItem(product);
-                    lastInteractTime = Time.time;
+                    GameObject topItem = PeekTopItem();
+                    if (topItem != null)
+                    {
+                        ItemData itemData = topItem.GetComponent<ItemData>();
+                        if (itemData != null)
+                        {
+                            ItemType currentItemType = itemData.itemType;
+                            if (consumeMachine.TryReceiveInput(currentItemType, topItem))
+                            {
+                                RemoveTopItem();
+                                lastInteractTime = Time.time;
+                            }
+                        }
+                    }
+                }
+                // 站在【输出区】
+                else if (colliderName.Contains("Out") && !IsFull)
+                {
+                    GameObject product = consumeMachine.CollectProduct();
+                    if (product != null)
+                    {
+                        AddItem(product);
+                        lastInteractTime = Time.time;
+                    }
                 }
             }
-        }
-        // ==========================================
-        // 场景 2：如果碰到的机器是【自动生产机器】（如西红柿树、草地）
-        // ==========================================
-        else
-        {
-            // 自动机器只有输出功能，碰到了就直接尝试收集
-            if (!IsFull)
+            // 场景 2：碰到了【自动生产机器】（如西红柿树）
+            else
             {
-                GameObject product = baseMachine.CollectProduct();
-                if (product != null)
+                if (!IsFull)
                 {
-                    AddItem(product);
-                    lastInteractTime = Time.time;
+                    GameObject product = baseMachine.CollectProduct();
+                    if (product != null)
+                    {
+                        AddItem(product);
+                        lastInteractTime = Time.time;
+                    }
                 }
             }
         }

@@ -19,6 +19,15 @@ public class ConsumeProductionMachine : BaseProductionMachine
     [Tooltip("拖入 Mat_Input_Gray 下的所有的 InputSlots 子节点")]
     public Transform[] inputSlots;
 
+    // ================== 新增吸收动画设置 ==================
+    [Header("吸收动画设置 (Consume Animation)")]
+    [Tooltip("原料消耗时飞向的中心点（如：鸡舍的 FactoryInputSlot、机器的漏斗）")]
+    public Transform consumePoint;
+
+    [Tooltip("原料被吸入的动画时长")]
+    public float consumeAnimDuration = 0.3f;
+    // ====================================================
+
     [Header("通用动画设置 (Animation)")]
     [Tooltip("把机器或动物模型身上的 Animation 组件拖进来（如果没有可为空）")]
     public Animation animComponent;
@@ -27,44 +36,35 @@ public class ConsumeProductionMachine : BaseProductionMachine
     public string idleAnimName = "Idle";
 
     [Tooltip("机器运转 / 动物进食生产时的动画名称")]
-    public string workAnimName = "Work"; // 【规范化】将 eat 改为更通用的 work
+    public string workAnimName = "Work";
 
     private List<GameObject> currentInputItems = new List<GameObject>();
     private bool isProcessing = false;
 
     private void Start()
     {
-        // 游戏一开始，默认播放空闲动画
         if (animComponent != null && !string.IsNullOrEmpty(idleAnimName))
         {
             animComponent.Play(idleAnimName);
         }
     }
 
-    /// <summary>
-    /// 接收原料的接口（由玩家或NPC在碰撞时主动调用）
-    /// </summary>
     public bool TryReceiveInput(ItemType inputType, GameObject inputItem)
     {
-        // 1. 如果类型不匹配，或者 输入区槽位 已经被放满了，则拒收
         if (inputType != requiredInputType || currentInputItems.Count >= inputSlots.Length)
         {
             return false;
         }
 
-        // 2. 找到当前对应的输入槽位
         Transform targetSlot = inputSlots[currentInputItems.Count];
 
-        // 3. 将投入的物体设为槽位的子物体，并让它飞到槽位上
         inputItem.transform.SetParent(targetSlot);
         inputItem.transform.DOKill();
         inputItem.transform.DOLocalJump(Vector3.zero, 0.01f, 1, 0.3f);
         inputItem.transform.DOLocalRotate(Vector3.zero, 0.3f);
 
-        // 4. 将物体加入管理列表
         currentInputItems.Add(inputItem);
 
-        // 5. 如果没有在加工，就启动加工协程
         if (!isProcessing)
         {
             StartCoroutine(ProcessRoutine());
@@ -73,23 +73,18 @@ public class ConsumeProductionMachine : BaseProductionMachine
         return true;
     }
 
-    /// <summary>
-    /// 核心加工流程（内部自动循环）
-    /// </summary>
     private IEnumerator ProcessRoutine()
     {
         isProcessing = true;
 
-        // 【动画】开始加工，播放“运转/吃”的动画
         if (animComponent != null && !string.IsNullOrEmpty(workAnimName))
         {
             animComponent.CrossFade(workAnimName, 0.2f);
         }
 
-        // 当 输入区原料足够 && 输出区未满时，持续执行！
         while (currentInputItems.Count >= inputNeededPerOutput && readyProducts.Count < MaxCapacity)
         {
-            // 等待加工时间
+            // 等待机器加工时间
             yield return new WaitForSeconds(processingTime);
 
             // 消耗指定数量的原料
@@ -99,16 +94,36 @@ public class ConsumeProductionMachine : BaseProductionMachine
                 GameObject itemToConsume = currentInputItems[lastIdx];
                 currentInputItems.RemoveAt(lastIdx);
 
-                Destroy(itemToConsume);
+                // 【核心修改】：替换掉原本瞬间的 Destroy(itemToConsume)
+                if (consumePoint != null)
+                {
+                    itemToConsume.transform.DOKill(); // 清理残留动画
+
+                    // 1. 飞向吸收点（使用 InBack 产生一种被用力吸进去的视觉表现）
+                    itemToConsume.transform.DOMove(consumePoint.position, consumeAnimDuration).SetEase(Ease.Linear);
+
+                    // 2. 缩放到 0，并在彻底缩放完毕后销毁物体
+                    itemToConsume.transform.DOScale(Vector3.zero, consumeAnimDuration).SetEase(Ease.Linear)
+                        .OnComplete(() => Destroy(itemToConsume));
+                }
+                else
+                {
+                    // 如果没配置吸收点，则退化为直接销毁
+                    Destroy(itemToConsume);
+                }
             }
 
-            // 调用基类方法，在输出区生成产品
+            // 等待西红柿飞进去的动画播完后，再产出鸡蛋，视觉上会更加连贯
+            if (consumePoint != null)
+            {
+                yield return new WaitForSeconds(consumeAnimDuration);
+            }
+
             GenerateProduct();
         }
 
         isProcessing = false;
 
-        // 【动画】加工结束，恢复“空闲”动画
         if (animComponent != null && !string.IsNullOrEmpty(idleAnimName))
         {
             animComponent.CrossFade(idleAnimName, 0.2f);
