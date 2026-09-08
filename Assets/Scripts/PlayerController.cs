@@ -98,12 +98,15 @@ public class PlayerController : BaseCharacterController
     private System.Collections.Generic.Dictionary<Transform, Vector3> originalScales = new System.Collections.Generic.Dictionary<Transform, Vector3>();
     private void OnTriggerEnter(Collider other)
     {
-        // 如果碰到的属于交互区域
-        if (IsInteractableZone(other))
-        {
-            Transform target = other.transform; // 只获取当前碰到的地面物体（不是整个货架）
+        // 尝试获取碰撞体身上的“交互区标识”
+        InteractZone zone = other.GetComponent<InteractZone>();
 
-            // 第一次碰到时，记录这个地面真正的 Scale
+        // 如果有这个标识，且配置了视觉地板 (统一处理了所有机器和货架！)
+        if (zone != null && zone.floorVisual != null)
+        {
+            Transform target = zone.floorVisual;
+
+            // 第一次碰到时，记录这个地板真正的 Scale
             if (!originalScales.ContainsKey(target))
             {
                 originalScales[target] = target.localScale;
@@ -117,9 +120,11 @@ public class PlayerController : BaseCharacterController
 
     private void OnTriggerExit(Collider other)
     {
-        if (IsInteractableZone(other))
+        InteractZone zone = other.GetComponent<InteractZone>();
+
+        if (zone != null && zone.floorVisual != null)
         {
-            Transform target = other.transform;
+            Transform target = zone.floorVisual;
 
             if (originalScales.ContainsKey(target))
             {

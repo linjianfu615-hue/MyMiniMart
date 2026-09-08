@@ -129,4 +129,26 @@ public class ConsumeProductionMachine : BaseProductionMachine
             animComponent.CrossFade(idleAnimName, 0.2f);
         }
     }
+
+    /// <summary>
+    /// 重写基类的收集逻辑：当玩家拿走产出物时，尝试唤醒停机的流水线
+    /// </summary>
+    public override GameObject CollectProduct()
+    {
+        // 1. 先执行基类原本的逻辑，把面粉/鸡蛋拿走
+        GameObject collectedItem = base.CollectProduct();
+
+        // 2. 如果成功拿走了物品（输出区腾出了空位），并且机器当前处于“停机/闲置”状态
+        if (collectedItem != null && !isProcessing)
+        {
+            // 3. 检查输入区的原料还够不够加工一次
+            if (currentInputItems.Count >= inputNeededPerOutput)
+            {
+                // 唤醒机器，继续生产！
+                StartCoroutine(ProcessRoutine());
+            }
+        }
+
+        return collectedItem;
+    }
 }

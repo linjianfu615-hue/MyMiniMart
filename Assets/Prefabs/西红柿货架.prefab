@@ -661,6 +661,7 @@ GameObject:
   - component: {fileID: 7400858856772706236}
   - component: {fileID: 3255333116104977754}
   - component: {fileID: 8391747246071171301}
+  - component: {fileID: 629436039232070472}
   m_Layer: 0
   m_HasEditorInfo: 1
   m_Name: InputCollider
@@ -758,6 +759,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 12.999999, y: 0.45, z: 10.000977}
   m_Center: {x: -0.00000047683716, y: 0.48, z: -0.038123846}
+--- !u!114 &629436039232070472
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6496055245641855595}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abda6b528219af84c9cb9475c9c6f5f9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  floorVisual: {fileID: 7277815370172581632}
 --- !u!1 &6787327768162472715
 GameObject:
   m_ObjectHideFlags: 0

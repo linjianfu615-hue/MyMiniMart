@@ -13,7 +13,7 @@ public enum ItemType
     Bread,          // 面包
     Milk,           // 牛奶
     CannedFood,     // 罐头
-    Flour           // 面粉
+    FlourBag,       // 面粉
 }
 
 /// <summary>
