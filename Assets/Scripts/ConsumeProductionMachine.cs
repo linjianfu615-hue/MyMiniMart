@@ -2,26 +2,40 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
+using System;
+
+/// <summary>
+/// 原料需求配置类 (可以在 Inspector 面板中自由添加多种原料)
+/// </summary>
+[Serializable]
+public class InputRequirement
+{
+    [Tooltip("需要的原材料类型 (如：鸡蛋、面粉)")]
+    public ItemType requiredType;
+
+    [Tooltip("生成一个成品需要消耗几个该原料")]
+    public int amountNeeded = 1;
+
+    [Tooltip("该原料对应的视觉槽位 (如：拖入 Mat_Input_1 下的所有 Slot)")]
+    public Transform[] slots;
+
+    // 运行时存放当前已经放上来的具体物品 (隐藏，仅供代码内部计算)
+    [HideInInspector]
+    public List<GameObject> currentItems = new List<GameObject>();
+}
 
 public class ConsumeProductionMachine : BaseProductionMachine
 {
-    [Header("消耗生产设置 (Consume Production)")]
-    [Tooltip("机器需要的原料类型")]
-    public ItemType requiredInputType = ItemType.Tomato;
-
-    [Tooltip("生成一个目标物品需要消耗多少个原料")]
-    public int inputNeededPerOutput = 1;
+    [Header("消耗生产设置 (多原料配方)")]
+    [Tooltip("机器的配方需求列表。需要几种原料就添加几个元素。")]
+    public List<InputRequirement> inputRequirements = new List<InputRequirement>();
 
     [Tooltip("单次加工/消化所需的时间")]
     public float processingTime = 2f;
 
-    [Header("输入槽位设置 (Input Slots)")]
-    [Tooltip("拖入 Mat_Input_Gray 下的所有的 InputSlots 子节点")]
-    public Transform[] inputSlots;
-
-    // ================== 新增吸收动画设置 ==================
+    // ================== 吸收动画设置 ==================
     [Header("吸收动画设置 (Consume Animation)")]
-    [Tooltip("原料消耗时飞向的中心点（如：鸡舍的 FactoryInputSlot、机器的漏斗）")]
+    [Tooltip("原料消耗时飞向的中心点")]
     public Transform consumePoint;
 
     [Tooltip("原料被吸入的动画时长")]
@@ -29,16 +43,10 @@ public class ConsumeProductionMachine : BaseProductionMachine
     // ====================================================
 
     [Header("通用动画设置 (Animation)")]
-    [Tooltip("把机器或动物模型身上的 Animation 组件拖进来（如果没有可为空）")]
     public Animation animComponent;
-
-    [Tooltip("机器空闲 / 动物待机时的动画名称")]
     public string idleAnimName = "Idle";
-
-    [Tooltip("机器运转 / 动物进食生产时的动画名称")]
     public string workAnimName = "Work";
 
-    private List<GameObject> currentInputItems = new List<GameObject>();
     private bool isProcessing = false;
 
     private void Start()
@@ -49,28 +57,57 @@ public class ConsumeProductionMachine : BaseProductionMachine
         }
     }
 
+    /// <summary>
+    /// 检查是否所有种类的原料都达到了加工的最低数量要求
+    /// </summary>
+    private bool CheckAllInputsReady()
+    {
+        foreach (var req in inputRequirements)
+        {
+            if (req.currentItems.Count < req.amountNeeded)
+            {
+                return false; // 只要有任何一种原料不够，就不能开工
+            }
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// 尝试接收外部投递的原料
+    /// </summary>
     public bool TryReceiveInput(ItemType inputType, GameObject inputItem)
     {
-        if (inputType != requiredInputType || currentInputItems.Count >= inputSlots.Length)
+        // 遍历所有的配方需求，看看当前投递的物品属于哪一种
+        foreach (var req in inputRequirements)
         {
-            return false;
+            if (req.requiredType == inputType)
+            {
+                // 如果属于这种原料，且对应的专属槽位还没满
+                if (req.currentItems.Count < req.slots.Length)
+                {
+                    Transform targetSlot = req.slots[req.currentItems.Count];
+
+                    // 放置逻辑
+                    inputItem.transform.SetParent(targetSlot);
+                    inputItem.transform.DOKill();
+                    inputItem.transform.DOLocalJump(Vector3.zero, 0.01f, 1, 0.3f);
+                    inputItem.transform.DOLocalRotate(Vector3.zero, 0.3f);
+
+                    req.currentItems.Add(inputItem);
+
+                    // 如果当前没在加工，且所有原料都齐了，启动加工流水线
+                    if (!isProcessing && CheckAllInputsReady())
+                    {
+                        StartCoroutine(ProcessRoutine());
+                    }
+
+                    return true; // 成功接收
+                }
+            }
         }
 
-        Transform targetSlot = inputSlots[currentInputItems.Count];
-
-        inputItem.transform.SetParent(targetSlot);
-        inputItem.transform.DOKill();
-        inputItem.transform.DOLocalJump(Vector3.zero, 0.01f, 1, 0.3f);
-        inputItem.transform.DOLocalRotate(Vector3.zero, 0.3f);
-
-        currentInputItems.Add(inputItem);
-
-        if (!isProcessing)
-        {
-            StartCoroutine(ProcessRoutine());
-        }
-
-        return true;
+        // 如果遍历完了发现类型都不匹配，或者匹配的类型槽位满了，则拒收
+        return false;
     }
 
     private IEnumerator ProcessRoutine()
@@ -82,38 +119,35 @@ public class ConsumeProductionMachine : BaseProductionMachine
             animComponent.CrossFade(workAnimName, 0.2f);
         }
 
-        while (currentInputItems.Count >= inputNeededPerOutput && readyProducts.Count < MaxCapacity)
+        // 只要原料齐全，且输出区没满，就一直生产
+        while (CheckAllInputsReady() && readyProducts.Count < MaxCapacity)
         {
-            // 等待机器加工时间
+            // 等待加工时间
             yield return new WaitForSeconds(processingTime);
 
-            // 消耗指定数量的原料
-            for (int i = 0; i < inputNeededPerOutput; i++)
+            // 遍历所有原料配方，分别扣除它们所需消耗的数量
+            foreach (var req in inputRequirements)
             {
-                int lastIdx = currentInputItems.Count - 1;
-                GameObject itemToConsume = currentInputItems[lastIdx];
-                currentInputItems.RemoveAt(lastIdx);
-
-                // 【核心修改】：替换掉原本瞬间的 Destroy(itemToConsume)
-                if (consumePoint != null)
+                for (int i = 0; i < req.amountNeeded; i++)
                 {
-                    itemToConsume.transform.DOKill(); // 清理残留动画
+                    int lastIdx = req.currentItems.Count - 1;
+                    GameObject itemToConsume = req.currentItems[lastIdx];
+                    req.currentItems.RemoveAt(lastIdx);
 
-                    // 1. 飞向吸收点（使用 InBack 产生一种被用力吸进去的视觉表现）
-                    itemToConsume.transform.DOMove(consumePoint.position, consumeAnimDuration).SetEase(Ease.Linear);
-
-                    // 2. 缩放到 0，并在彻底缩放完毕后销毁物体
-                    itemToConsume.transform.DOScale(Vector3.zero, consumeAnimDuration).SetEase(Ease.Linear)
-                        .OnComplete(() => Destroy(itemToConsume));
-                }
-                else
-                {
-                    // 如果没配置吸收点，则退化为直接销毁
-                    Destroy(itemToConsume);
+                    if (consumePoint != null)
+                    {
+                        itemToConsume.transform.DOKill();
+                        itemToConsume.transform.DOMove(consumePoint.position, consumeAnimDuration).SetEase(Ease.Linear);
+                        itemToConsume.transform.DOScale(Vector3.zero, consumeAnimDuration).SetEase(Ease.Linear)
+                            .OnComplete(() => Destroy(itemToConsume));
+                    }
+                    else
+                    {
+                        Destroy(itemToConsume);
+                    }
                 }
             }
 
-            // 等待西红柿飞进去的动画播完后，再产出鸡蛋，视觉上会更加连贯
             if (consumePoint != null)
             {
                 yield return new WaitForSeconds(consumeAnimDuration);
@@ -131,20 +165,17 @@ public class ConsumeProductionMachine : BaseProductionMachine
     }
 
     /// <summary>
-    /// 重写基类的收集逻辑：当玩家拿走产出物时，尝试唤醒停机的流水线
+    /// 当玩家拿走成品时，尝试唤醒停机的流水线
     /// </summary>
     public override GameObject CollectProduct()
     {
-        // 1. 先执行基类原本的逻辑，把面粉/鸡蛋拿走
         GameObject collectedItem = base.CollectProduct();
 
-        // 2. 如果成功拿走了物品（输出区腾出了空位），并且机器当前处于“停机/闲置”状态
+        // 拿走成品后，如果机器是停机状态，检查下原料是否够继续生产，够就再次启动
         if (collectedItem != null && !isProcessing)
         {
-            // 3. 检查输入区的原料还够不够加工一次
-            if (currentInputItems.Count >= inputNeededPerOutput)
+            if (CheckAllInputsReady())
             {
-                // 唤醒机器，继续生产！
                 StartCoroutine(ProcessRoutine());
             }
         }

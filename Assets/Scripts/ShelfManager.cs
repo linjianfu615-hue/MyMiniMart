@@ -19,6 +19,50 @@ public class ShelfManager : MonoBehaviour
     // 精准记录每个槽位上当前摆放的物品
     private GameObject[] slotOccupants;
 
+    // ================== 新增：交互动画设置 ==================
+    [Header("动画设置 (Animation - Optional)")]
+    [Tooltip("如果货架有开关门动画（如冰箱），拖入带有该动画的 Animation 组件")]
+    public Animation animComponent;
+
+    public string openAnimName = "fridge_open";
+    public string closeAnimName = "fridge_close";
+
+    // 精准记录当前在区域内的角色数量（防止一人离开，门就把另一个还在里面的人关了）
+    private int entitiesInZone = 0;
+    // ========================================================
+
+    /// <summary>
+    /// 当任何角色（玩家/AI）进入交互区时调用
+    /// </summary>
+    public void OnEntityEnter()
+    {
+        entitiesInZone++;
+
+        // 只有第一个人进入时，才播放开门动画
+        if (entitiesInZone == 1 && animComponent != null && !string.IsNullOrEmpty(openAnimName))
+        {
+            animComponent.CrossFade(openAnimName, 0.15f);
+        }
+    }
+
+    /// <summary>
+    /// 当任何角色（玩家/AI）离开交互区时调用
+    /// </summary>
+    public void OnEntityExit()
+    {
+        entitiesInZone--;
+
+        if (entitiesInZone <= 0)
+        {
+            entitiesInZone = 0;
+            // 当最后一个人离开时，才播放关门动画
+            if (animComponent != null && !string.IsNullOrEmpty(closeAnimName))
+            {
+                animComponent.CrossFade(closeAnimName, 0.15f);
+            }
+        }
+    }
+
     /// <summary>
     /// 判断货架是否已满
     /// </summary>

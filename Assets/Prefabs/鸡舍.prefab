@@ -833,21 +833,23 @@ MonoBehaviour:
   - {fileID: 2954822019169458205}
   - {fileID: 4662858226209910049}
   productContainer: {fileID: 0}
-  spawnAnimDuration: 0.5
-  requiredInputType: 3
-  inputNeededPerOutput: 1
+  spawnAnimDuration: 0.3
+  inputRequirements:
+  - requiredType: 3
+    amountNeeded: 1
+    slots:
+    - {fileID: 8336412423621430117}
+    - {fileID: 2636961988745226720}
+    - {fileID: 1431168786277298315}
+    - {fileID: 287346363820398626}
+    - {fileID: 2801531979741685048}
+    - {fileID: 60216735514424381}
+    - {fileID: 5228490549732064607}
+    - {fileID: 382129636799247169}
+    currentItems: []
   processingTime: 2
-  inputSlots:
-  - {fileID: 8336412423621430117}
-  - {fileID: 2636961988745226720}
-  - {fileID: 1431168786277298315}
-  - {fileID: 287346363820398626}
-  - {fileID: 2801531979741685048}
-  - {fileID: 60216735514424381}
-  - {fileID: 5228490549732064607}
-  - {fileID: 382129636799247169}
   consumePoint: {fileID: 4862101337918361262}
-  consumeAnimDuration: 0.3
+  consumeAnimDuration: 0.1
   animComponent: {fileID: 5651262342741037938}
   idleAnimName: chicken_TurnHead
   workAnimName: chicken_Eat
