@@ -200,6 +200,34 @@ public class PlayerController : BaseCharacterController
         }
 
         // ==========================================
+        // 场景 4：优先判断如果碰到的物体是【垃圾桶】
+        // ==========================================
+        TrashBinManager trashBin = other.GetComponentInParent<TrashBinManager>();
+        if (trashBin != null)
+        {
+            string colliderName = other.name;
+
+            // 如果玩家站在 InputCollider 里，并且手里有东西
+            if (colliderName.Contains("Input") && HasItems)
+            {
+                // 直接从手里拿走最上面的物品 (不再判断 ItemType，因为垃圾桶什么都吃)
+                GameObject topItem = RemoveTopItem();
+
+                if (topItem != null)
+                {
+                    // 交给垃圾桶去播放丢弃动画并销毁
+                    trashBin.ReceiveTrash(topItem);
+
+                    // 记录交互时间，利用你之前写好的 interactCooldown (0.15s)
+                    // 玩家只要站着不动，手里的东西就会以一秒 6 个的速度“嗖嗖嗖”飞进垃圾桶
+                    lastInteractTime = Time.time;
+                }
+            }
+            // 碰到了垃圾桶执行完逻辑后，直接结束本次触发
+            return;
+        }
+
+        // ==========================================
         // 场景 1 & 2：如果碰到的不是货架，尝试获取【机器基类组件】
         // ==========================================
         BaseProductionMachine baseMachine = other.GetComponentInParent<BaseProductionMachine>();
