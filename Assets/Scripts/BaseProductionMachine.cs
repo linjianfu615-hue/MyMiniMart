@@ -37,7 +37,7 @@ public abstract class BaseProductionMachine : MonoBehaviour
     /// <summary>
     /// 存放“已经完全到达目标点，且可被玩家收集”的产品列表
     /// </summary>
-    protected List<GameObject> readyProducts = new List<GameObject>();
+    public List<GameObject> readyProducts = new List<GameObject>();
 
     /// <summary>
     /// 判断机器的所有槽位是否都被占满

@@ -779,12 +779,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2791541440921105117}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.0343, y: 0, z: -0.056799997}
+  m_LocalRotation: {x: -0, y: -1, z: -0, w: 0}
+  m_LocalPosition: {x: -0.034299996, y: -0.02, z: 0.0568}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 32362632182665389}
+  m_Father: {fileID: 9143746038618544377}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3087534545599805616
 GameObject:
@@ -1199,6 +1199,8 @@ Transform:
   - {fileID: 32362632182665389}
   - {fileID: 3884090824271155708}
   - {fileID: 1241381150890041874}
+  - {fileID: 3951268361455371256}
+  - {fileID: 5512278035247463658}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!111 &4194224610873008253
@@ -1243,6 +1245,7 @@ MonoBehaviour:
   - {fileID: 8457309421890214252}
   productContainer: {fileID: 0}
   spawnAnimDuration: 0.3
+  readyProducts: []
   inputRequirements:
   - requiredType: 3
     amountNeeded: 1
@@ -1557,7 +1560,7 @@ GameObject:
   - component: {fileID: 5512278035247463658}
   m_Layer: 0
   m_HasEditorInfo: 1
-  m_Name: WorkerSlot
+  m_Name: OutputWorkerSlot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1571,12 +1574,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6920588698895477670}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.0404, y: 0, z: -0.049999997}
+  m_LocalRotation: {x: -0, y: -1, z: -0, w: 0}
+  m_LocalPosition: {x: 0.0404, y: -0.02, z: 0.049999997}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 32362632182665389}
+  m_Father: {fileID: 9143746038618544377}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7142012263634753514
 GameObject:
@@ -1643,14 +1646,12 @@ Transform:
   - {fileID: 6239490397620618994}
   - {fileID: 5963270136506750335}
   - {fileID: 1268832562835662559}
-  - {fileID: 3951268361455371256}
   - {fileID: 7152457817968880558}
   - {fileID: 3218768350346787384}
   - {fileID: 1851300924423482389}
   - {fileID: 5482215128015792045}
   - {fileID: 5416346120286156630}
   - {fileID: 6075286257501711541}
-  - {fileID: 5512278035247463658}
   m_Father: {fileID: 9143746038618544377}
   m_LocalEulerAnglesHint: {x: 0, y: -180, z: 0}
 --- !u!1 &7790826729079986667

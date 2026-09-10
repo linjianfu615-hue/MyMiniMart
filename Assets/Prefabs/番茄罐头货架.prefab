@@ -76,6 +76,38 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1571395957039074319}
   m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
+--- !u!1 &1612095396266152827
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 7
+  m_Component:
+  - component: {fileID: 8766243495974087365}
+  m_Layer: 0
+  m_HasEditorInfo: 1
+  m_Name: WorkerSlot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8766243495974087365
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1612095396266152827}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: -6.36, z: -0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4706670659995358888}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1803281407005524529
 GameObject:
   m_ObjectHideFlags: 0
@@ -348,6 +380,7 @@ Transform:
   - {fileID: 8418717373255744109}
   - {fileID: 7149256333645125211}
   - {fileID: 1571395957039074319}
+  - {fileID: 8766243495974087365}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 90, y: -180, z: 0}
 --- !u!114 &5784072357451531384
@@ -377,6 +410,9 @@ MonoBehaviour:
   - {fileID: 664888848353881054}
   - {fileID: 4432838315583735811}
   placeAnimDuration: 0.3
+  animComponent: {fileID: 0}
+  openAnimName: fridge_open
+  closeAnimName: fridge_close
 --- !u!1 &4662075284509429004
 GameObject:
   m_ObjectHideFlags: 0
