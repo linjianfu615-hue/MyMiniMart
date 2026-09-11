@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: D38Wsi6rUC/k0WBJRpuYWX0Jv+omVsuNC8ZiPN5wAP6B63/8jk+jXUw=
+guid: WnIe5n7+UHkz+o+KzTyoX1GCdbDax+lMhVRSQFNd0yIUVB/FV5GOgkw=
 ModelImporter:
   serializedVersion: 22361
   internalIDToNameTable: []
@@ -45,8 +45,8 @@ ModelImporter:
     lODScreenPercentages: []
     globalScale: 1
     meshCompression: 0
-    totalVerticesCount: 711
-    totalTrianglesCount: 1300
+    totalVerticesCount: 834
+    totalTrianglesCount: 1428
     addColliders: 0
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
