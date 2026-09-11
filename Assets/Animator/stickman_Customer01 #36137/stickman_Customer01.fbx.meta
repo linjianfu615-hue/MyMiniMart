@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: Cy4XtCilBn7z7BmTGDFjFILzlX7/h9gPgMirB8DUAG88xsZL3UAjXTk=
+guid: BnwXvCv4AnsJC+Equ0TQ6PLekEjryuM2LpvHuBhfHlFI/m9OYoxtBkY=
 ModelImporter:
   serializedVersion: 22361
   internalIDToNameTable: []
@@ -45,8 +45,8 @@ ModelImporter:
     lODScreenPercentages: []
     globalScale: 1
     meshCompression: 0
-    totalVerticesCount: 620
-    totalTrianglesCount: 1200
+    totalVerticesCount: 790
+    totalTrianglesCount: 1370
     addColliders: 0
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
@@ -93,8 +93,14 @@ ModelImporter:
       transformScaleState: 0
       isPossibleOverflow: 0
     virtualGeometryPlatformSettings: []
-    selectedVGMeshes: []
-    supportVGMeshes: []
+    selectedVGMeshes:
+    - index: 0
+      meshName: hat_Beanie
+      meshGeometryBuffer: 0
+    supportVGMeshes:
+    - index: 0
+      meshName: hat_Beanie
+      meshGeometryBuffer: 0
   tangentSpace:
     normalSmoothAngle: 60
     normalImportMode: 0

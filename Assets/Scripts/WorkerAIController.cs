@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public class WorkerTask
 {
     [Header("任务起点")]
-    [Tooltip("去哪里拿货 (如：鸡舍、小麦田)")]
+    [Tooltip("去哪里拿货 (如：鸡舍、西红柿树)")]
     public BaseProductionMachine sourceMachine;
 
     [Header("任务终点 (根据需求二选一即可)")]
@@ -16,26 +16,25 @@ public class WorkerTask
     public Vector3 GetSourcePosition()
     {
         if (sourceMachine == null) return Vector3.zero;
-        Transform outSlot = sourceMachine.transform.Find("OutputWorkerSlot");
-        if (outSlot != null) return outSlot.position;
-        Transform workerSlot = sourceMachine.transform.Find("WorkerSlot");
-        if (workerSlot != null) return workerSlot.position;
-        return sourceMachine.transform.position;
+
+        Transform slot = sourceMachine.transform.Find("OutputWorkerSlot");
+        if (slot == null) slot = sourceMachine.transform.Find("WorkerSlot");
+
+        return slot != null ? slot.position : sourceMachine.transform.position;
     }
 
     public Vector3 GetTargetPosition()
     {
+        Transform slot = null;
         if (targetShelf != null)
         {
-            Transform workerSlot = targetShelf.transform.Find("WorkerSlot");
-            if (workerSlot != null) return workerSlot.position;
-            return targetShelf.transform.position;
+            slot = targetShelf.transform.Find("WorkerSlot");
+            return slot != null ? slot.position : targetShelf.transform.position;
         }
-        if (targetMachine != null)
+        else if (targetMachine != null)
         {
-            Transform inSlot = targetMachine.transform.Find("InputWorkerSlot");
-            if (inSlot != null) return inSlot.position;
-            return targetMachine.transform.position;
+            slot = targetMachine.transform.Find("InputWorkerSlot");
+            return slot != null ? slot.position : targetMachine.transform.position;
         }
         return Vector3.zero;
     }
@@ -52,11 +51,14 @@ public class WorkerAIController : BaseCharacterController
     private Vector3 startPosition;
     private WorkerTask currentTask;
 
-    private enum AIState { Idle, MovingToSource, MovingToDest, MovingToTrash, ReturningHome }
+    private enum AIState { Idle, MovingToSource, Collecting, MovingToDest, Delivering, MovingToTrash, Trashing, ReturningHome }
     private AIState currentState = AIState.Idle;
 
     private float interactTimer = 0f;
     private float interactDelay = 0.2f;
+
+    private static HashSet<string> globalLocks = new HashSet<string>();
+    private string myCurrentLock = "";
 
     protected override void Awake()
     {
@@ -66,102 +68,203 @@ public class WorkerAIController : BaseCharacterController
         agent.updateRotation = false;
     }
 
+    private void OnDisable()
+    {
+        ReleaseLock();
+    }
+
     private void Update()
     {
-        // =========================================================
-        // 【修复Bug 1：颤动与原地打转】
-        // 如果已经彻底刹车，或者速度极小，强制传给基类 Vector3.zero 让其完全静止
-        // =========================================================
         if (agent.isStopped || agent.velocity.sqrMagnitude < 0.01f)
-        {
             MoveAndRotate(Vector3.zero);
-        }
         else
-        {
             MoveAndRotate(agent.velocity.normalized);
-        }
 
-        // 状态机分发
         switch (currentState)
         {
             case AIState.Idle:
+            case AIState.ReturningHome:
                 FindNextTask();
                 break;
 
-            case AIState.ReturningHome:
-                if (HasReachedDestination()) currentState = AIState.Idle;
-                else FindNextTask(); // 回家路上也要持续环顾四周找活干
+            case AIState.MovingToSource:
+                if (HasReachedDestination()) ChangeState(AIState.Collecting);
                 break;
 
-            case AIState.MovingToSource:
-                if (HasReachedDestination()) HandleCollection();
+            case AIState.Collecting:
+                HandleCollection();
                 break;
 
             case AIState.MovingToDest:
-                if (HasReachedDestination()) HandleDelivery();
+                if (HasReachedDestination()) ChangeState(AIState.Delivering);
+                break;
+
+            case AIState.Delivering:
+                HandleDelivery();
                 break;
 
             case AIState.MovingToTrash:
-                if (HasReachedDestination()) HandleTrash();
+                if (HasReachedDestination()) ChangeState(AIState.Trashing);
+                break;
+
+            case AIState.Trashing:
+                HandleTrash();
                 break;
         }
     }
 
-    // =========================================================
-    // 【修复Bug 2：智能满载收集机制】
-    // =========================================================
+    private void ChangeState(AIState newState)
+    {
+        currentState = newState;
+        if (newState == AIState.Collecting || newState == AIState.Delivering || newState == AIState.Trashing || newState == AIState.Idle)
+        {
+            if (agent.isOnNavMesh) agent.isStopped = true;
+        }
+    }
+
     private void FindNextTask()
     {
-        // 第一阶段：如果手里没拿满，优先去各个产出点【进货】
+        ReleaseLock();
+
+        ItemType? holdingType = GetHoldingItemType(); // 看看手里拿着啥
+
+        // =========================================================
+        // 【第一阶段：进货】只要手里没满，就尽量去装满！
+        // =========================================================
         if (!IsFull)
         {
             foreach (var task in tasks)
             {
-                if (task.sourceMachine != null && (task.targetShelf != null || task.targetMachine != null))
+                // 如果源头机器有货
+                if (task.sourceMachine != null && !IsSourceEmpty(task) && (task.targetShelf != null || task.targetMachine != null))
                 {
-                    // 判断条件：终点缺货 + 起点有货 + 手上的货和这个任务匹配（空手接一切）
-                    if (!IsTargetFull(task) && !IsSourceEmpty(task) && IsHoldingItemTypeForTask(task))
+                    ItemType? sourceType = GetSourceItemType(task); // 这台机器产出的是啥
+
+                    if (sourceType.HasValue)
                     {
-                        currentTask = task;
-                        SetDestination(task.GetSourcePosition(), AIState.MovingToSource);
-                        return; // 找到活了，出发进货！
+                        // 【跨机器收集的核心防御】：如果手里已经有货了，但跟这台机器产出的不一样，绝对不拿！（防止左手小麦右手西红柿）
+                        if (holdingType.HasValue && holdingType.Value != sourceType.Value)
+                        {
+                            continue; // 跳过这个任务，看下一个
+                        }
+
+                        // 如果目标机器需要这种货
+                        if (IsItemTypeMatchForTask(task, sourceType.Value))
+                        {
+                            int targetMissing = GetTargetRemainingNeedForType(task, sourceType.Value);
+
+                            // 只要目标没满，并且我手里的数量还没凑够缺口，就继续去拿！
+                            if (!IsTargetFullForType(task, sourceType.Value) && carriedItems.Count < targetMissing)
+                            {
+                                string outLock = task.sourceMachine.GetInstanceID() + "_Out";
+                                if (!IsLockOccupied(outLock))
+                                {
+                                    currentTask = task;
+                                    ClaimLock(outLock);
+                                    GoToDestination(task.GetSourcePosition(), AIState.MovingToSource);
+                                    return;
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // 第二阶段：如果没法进货了（起点全空，或者手已拿满），且手里有东西，赶紧去【送货】
-        if (HasItems)
+        // =========================================================
+        // 【第二阶段：送货】如果上面没进到货（装满了，或者没别的机器能凑了），且手里有货，立刻去送
+        // =========================================================
+        if (HasItems && holdingType.HasValue)
         {
+            bool isAllTargetsReallyFull = true;
+
             foreach (var task in tasks)
             {
-                // 找一个能收我手里这批货的目的地
-                if (!IsTargetFull(task) && IsHoldingItemTypeForTask(task))
+                if (IsItemTypeMatchForTask(task, holdingType.Value))
                 {
-                    currentTask = task;
-                    SetDestination(task.GetTargetPosition(), AIState.MovingToDest);
-                    return;
+                    if (!IsTargetFullForType(task, holdingType.Value))
+                    {
+                        isAllTargetsReallyFull = false;
+
+                        Component targetFacility = task.targetShelf != null ? (Component)task.targetShelf : (Component)task.targetMachine;
+                        string inLock = targetFacility.GetInstanceID() + "_In";
+
+                        if (!IsLockOccupied(inLock))
+                        {
+                            currentTask = task;
+                            ClaimLock(inLock);
+                            GoToDestination(task.GetTargetPosition(), AIState.MovingToDest);
+                            return;
+                        }
+                    }
                 }
             }
 
-            // 兜底防呆：如果手里拿着东西，但所有对应的货架全满了，只能忍痛扔掉
-            SetDestination(GetTrashPosition(), AIState.MovingToTrash);
-            return;
+            // 如果能送的地方全满了
+            if (isAllTargetsReallyFull)
+            {
+                if (trashBin != null)
+                {
+                    string trashLock = trashBin.GetInstanceID() + "_In";
+                    if (!IsLockOccupied(trashLock))
+                    {
+                        ClaimLock(trashLock);
+                        GoToDestination(GetTrashPosition(), AIState.MovingToTrash);
+                        return;
+                    }
+                }
+                else
+                {
+                    ClearInventory();
+                }
+            }
+            else
+            {
+                // 没满，但正被别的同事锁着，原地等一下
+                if (currentState != AIState.Idle) ChangeState(AIState.Idle);
+                return;
+            }
         }
 
-        // 第三阶段：手里没东西，全场也没货，走回原点【待机休息】
-        if (currentState != AIState.ReturningHome)
+        // =========================================================
+        // 第三阶段：回家待机
+        // =========================================================
+        if (!HasItems) // 只有真正空手才回家，拿着东西即使卡住也原地等
         {
-            SetDestination(startPosition, AIState.ReturningHome);
+            float distToHome = Vector3.Distance(transform.position, startPosition);
+            if (distToHome > agent.stoppingDistance + 0.3f)
+            {
+                if (currentState != AIState.ReturningHome) GoToDestination(startPosition, AIState.ReturningHome);
+            }
+            else
+            {
+                if (currentState != AIState.Idle) ChangeState(AIState.Idle);
+            }
+        }
+        else
+        {
+            if (currentState != AIState.Idle) ChangeState(AIState.Idle);
         }
     }
 
     private void HandleCollection()
     {
-        // 收集时，如果突然满载了，立刻切回 Idle 让大脑(FindNextTask)分配去送货
-        if (IsFull || IsTargetFull(currentTask))
+        ItemType? sourceType = GetSourceItemType(currentTask);
+        if (!sourceType.HasValue)
         {
-            currentState = AIState.Idle;
+            ChangeState(AIState.Idle);
+            return;
+        }
+
+        int targetMissing = GetTargetRemainingNeedForType(currentTask, sourceType.Value);
+        int stillNeedToCollect = targetMissing - carriedItems.Count;
+
+        // 如果拿满了上限、或者已经拿够了机器缺口、或者这块地薅秃了
+        if (IsFull || IsTargetFullForType(currentTask, sourceType.Value) || stillNeedToCollect <= 0 || IsSourceEmpty(currentTask))
+        {
+            // 关键：切换回 Idle 后，下一帧会立刻执行 FindNextTask。
+            // 此时由于 carriedItems.Count < targetMissing，AI 会聪明地去【下一块小麦地】继续拿货！
+            ChangeState(AIState.Idle);
             return;
         }
 
@@ -171,25 +274,18 @@ public class WorkerAIController : BaseCharacterController
             interactTimer = 0f;
             GameObject item = currentTask.sourceMachine.CollectProduct();
 
-            if (item != null)
-            {
-                AddItem(item);
-            }
-            else
-            {
-                // 这棵树薅秃了没货了，立刻切回 Idle
-                // 下一帧 FindNextTask 发现没满，会自动派他去下一棵树凑齐 5 个！
-                currentState = AIState.Idle;
-            }
+            if (item != null) AddItem(item);
+            else ChangeState(AIState.Idle);
         }
     }
 
     private void HandleDelivery()
     {
-        // 送货时发现全满了，没地方放，切回 Idle 让大脑重新计算去哪里
-        if (IsTargetFull(currentTask))
+        ItemType? holdingType = GetHoldingItemType();
+
+        if (!holdingType.HasValue || IsTargetFullForType(currentTask, holdingType.Value))
         {
-            currentState = AIState.Idle;
+            ChangeState(AIState.Idle);
             return;
         }
 
@@ -208,13 +304,13 @@ public class WorkerAIController : BaseCharacterController
                     if (delivered) RemoveTopItem();
                     else
                     {
-                        currentState = AIState.Idle;
+                        ChangeState(AIState.Idle);
                         return;
                     }
                 }
             }
 
-            if (!HasItems) currentState = AIState.Idle; // 送空了，找新活
+            if (!HasItems) ChangeState(AIState.Idle);
         }
     }
 
@@ -227,28 +323,47 @@ public class WorkerAIController : BaseCharacterController
             GameObject topItem = RemoveTopItem();
             if (topItem != null && trashBin != null) trashBin.ReceiveTrash(topItem);
 
-            if (!HasItems) currentState = AIState.Idle;
+            if (!HasItems) ChangeState(AIState.Idle);
         }
     }
 
-    // ================== 核心功能封装辅助方法 ==================
+    // ================== 锁机制与寻路 ==================
 
-    private void SetDestination(Vector3 targetPos, AIState newState)
+    private void ClaimLock(string lockKey)
     {
-        if (agent.isStopped) agent.isStopped = false; // 出发前确保解除刹车
+        ReleaseLock();
+        if (!string.IsNullOrEmpty(lockKey))
+        {
+            myCurrentLock = lockKey;
+            globalLocks.Add(myCurrentLock);
+        }
+    }
+
+    private void ReleaseLock()
+    {
+        if (!string.IsNullOrEmpty(myCurrentLock))
+        {
+            globalLocks.Remove(myCurrentLock);
+            myCurrentLock = "";
+        }
+    }
+
+    private bool IsLockOccupied(string lockKey)
+    {
+        if (string.IsNullOrEmpty(lockKey)) return false;
+        return globalLocks.Contains(lockKey);
+    }
+
+    private void GoToDestination(Vector3 targetPos, AIState newState)
+    {
+        if (agent.isOnNavMesh && agent.isStopped) agent.isStopped = false;
         agent.SetDestination(targetPos);
         currentState = newState;
     }
 
     private bool HasReachedDestination()
     {
-        // 加上 0.1f 缓冲距离，防止由于模型 Collider 碰撞导致永远到不了绝对中心点
-        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.1f)
-        {
-            agent.isStopped = true; // 【修复Bug 1】到达目标后彻底拉起手刹！
-            return true;
-        }
-        return false;
+        return (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.25f);
     }
 
     private Vector3 GetTrashPosition()
@@ -258,18 +373,91 @@ public class WorkerAIController : BaseCharacterController
         return slot != null ? slot.position : trashBin.transform.position;
     }
 
-    private bool IsTargetFull(WorkerTask task)
+    // ================== 基于 ItemType 的精准判断 ==================
+
+    /// <summary>
+    /// 只检查源机器产出的物品类型
+    /// </summary>
+    private ItemType? GetSourceItemType(WorkerTask task)
+    {
+        if (task != null && task.sourceMachine != null && task.sourceMachine.readyProducts.Count > 0)
+        {
+            GameObject readyItem = task.sourceMachine.readyProducts[0];
+            if (readyItem != null)
+            {
+                ItemData data = readyItem.GetComponent<ItemData>();
+                if (data != null) return data.itemType;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// 只检查手里拿着的物品类型
+    /// </summary>
+    private ItemType? GetHoldingItemType()
+    {
+        if (HasItems)
+        {
+            GameObject topItem = PeekTopItem();
+            if (topItem != null)
+            {
+                ItemData data = topItem.GetComponent<ItemData>();
+                if (data != null) return data.itemType;
+            }
+        }
+        return null;
+    }
+
+    private bool IsItemTypeMatchForTask(WorkerTask task, ItemType type)
+    {
+        if (task.targetShelf != null)
+        {
+            return task.targetShelf.acceptedItemType == type;
+        }
+        else if (task.targetMachine != null)
+        {
+            foreach (var req in task.targetMachine.inputRequirements)
+            {
+                if (req.requiredType == type) return true;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    private bool IsTargetFullForType(WorkerTask task, ItemType type)
     {
         if (task.targetShelf != null) return task.targetShelf.IsFull;
         if (task.targetMachine != null)
         {
             foreach (var req in task.targetMachine.inputRequirements)
             {
-                if (req.currentItems.Count < req.slots.Length) return false;
+                if (req.requiredType == type)
+                {
+                    return req.currentItems.Count >= req.slots.Length;
+                }
             }
             return true;
         }
         return true;
+    }
+
+    private int GetTargetRemainingNeedForType(WorkerTask task, ItemType type)
+    {
+        if (task.targetShelf != null) return task.targetShelf.IsFull ? 0 : 99;
+        if (task.targetMachine != null)
+        {
+            foreach (var req in task.targetMachine.inputRequirements)
+            {
+                if (req.requiredType == type)
+                {
+                    return req.slots.Length - req.currentItems.Count;
+                }
+            }
+            return 0;
+        }
+        return 0;
     }
 
     private bool IsSourceEmpty(WorkerTask task)
@@ -278,37 +466,19 @@ public class WorkerAIController : BaseCharacterController
         return task.sourceMachine.readyProducts.Count == 0;
     }
 
-    /// <summary>
-    /// 判断手里的物品类型是否属于当前分配任务的目标需求（防止拿着鸡蛋跑去拿西红柿）
-    /// </summary>
-    private bool IsHoldingItemTypeForTask(WorkerTask task)
-    {
-        if (!HasItems) return true; // 空手的话什么任务都能接
-
-        GameObject topItem = PeekTopItem();
-        if (topItem == null) return true;
-
-        ItemData itemData = topItem.GetComponent<ItemData>();
-        if (itemData == null) return true;
-
-        if (task.targetShelf != null)
-        {
-            return task.targetShelf.acceptedItemType == itemData.itemType;
-        }
-        else if (task.targetMachine != null)
-        {
-            foreach (var req in task.targetMachine.inputRequirements)
-            {
-                if (req.requiredType == itemData.itemType) return true;
-            }
-        }
-        return false;
-    }
-
     private bool DeliverItemToTarget(WorkerTask task, ItemType itemType, GameObject item)
     {
         if (task.targetShelf != null) return task.targetShelf.TryAddProduct(itemType, item);
         if (task.targetMachine != null) return task.targetMachine.TryReceiveInput(itemType, item);
         return false;
+    }
+
+    private void ClearInventory()
+    {
+        while (HasItems)
+        {
+            GameObject item = RemoveTopItem();
+            if (item != null) Destroy(item);
+        }
     }
 }
