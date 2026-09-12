@@ -31,6 +31,20 @@ public class ShelfManager : MonoBehaviour
     private int entitiesInZone = 0;
     // ========================================================
 
+
+    // =======================================================
+    // 【核心补充】：生命周期注册，让 AI 知道这个货架的存在
+    // =======================================================
+    private void OnEnable()
+    {
+        if (FacilityManager.Instance != null) FacilityManager.Instance.RegisterShelf(this);
+    }
+
+    private void OnDisable()
+    {
+        if (FacilityManager.Instance != null) FacilityManager.Instance.UnregisterShelf(this);
+    }
+
     /// <summary>
     /// 当任何角色（玩家/AI）进入交互区时调用
     /// </summary>

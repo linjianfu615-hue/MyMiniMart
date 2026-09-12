@@ -39,6 +39,18 @@ public abstract class BaseProductionMachine : MonoBehaviour
     /// </summary>
     public List<GameObject> readyProducts = new List<GameObject>();
 
+    protected virtual void OnEnable()
+    {
+        // 设施一显示（比如2阶段出现），立刻去管理处报到
+        if (FacilityManager.Instance != null) FacilityManager.Instance.RegisterProducer(this);
+    }
+
+    protected virtual void OnDisable()
+    {
+        // 设施一隐藏（比如1阶段被替换），立刻从名单注销，AI 瞬间就会知道它没了！
+        if (FacilityManager.Instance != null) FacilityManager.Instance.UnregisterProducer(this);
+    }
+
     /// <summary>
     /// 判断机器的所有槽位是否都被占满
     /// </summary>

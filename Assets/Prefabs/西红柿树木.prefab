@@ -141,7 +141,7 @@ GameObject:
   - component: {fileID: 2695386620431455419}
   - component: {fileID: 4037026480962596967}
   - component: {fileID: 261948364778705148}
-  m_Layer: 8
+  m_Layer: 7
   m_HasEditorInfo: 1
   m_Name: "\u897F\u7EA2\u67FF\u6811\u6728"
   m_TagString: Tomato

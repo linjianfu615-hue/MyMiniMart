@@ -49,6 +49,21 @@ public class ConsumeProductionMachine : BaseProductionMachine
 
     private bool isProcessing = false;
 
+    // =======================================================
+    // 【核心补充】：加工机器拥有双重身份！
+    // =======================================================
+    protected override void OnEnable()
+    {
+        base.OnEnable(); // 调用父类逻辑，把自己注册为【生产者 Producer】
+        if (FacilityManager.Instance != null) FacilityManager.Instance.RegisterConsumer(this); // 同时把自己注册为【消费者 Consumer】
+    }
+
+    protected override void OnDisable()
+    {
+        base.OnDisable();
+        if (FacilityManager.Instance != null) FacilityManager.Instance.UnregisterConsumer(this);
+    }
+
     private void Start()
     {
         if (animComponent != null && !string.IsNullOrEmpty(idleAnimName))

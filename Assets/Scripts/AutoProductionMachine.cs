@@ -1,6 +1,10 @@
 using UnityEngine;
 using DG.Tweening;
 
+/// <summary>
+/// 自动产出的机器 (西红柿树、小麦根、鸡舍等)，自己随时间产出物品。
+/// 由于继承自 BaseProductionMachine，它已自动拥有注册到 FacilityManager 的能力。
+/// </summary>
 public class AutoProductionMachine : BaseProductionMachine
 {
     [Header("自动生产设置 (Auto Production)")]
