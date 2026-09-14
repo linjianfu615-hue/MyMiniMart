@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: By5MvHj/V3P0YTXn3L5a87O6scOX4Nw3tCPj9mWon0GYAtDTi1wgiWg=
+guid: B3oas3j4W37Bmc5hfeXeUdIJhOc3Uwb8vLFLgJfFzf/gPEmguiRVVWI=
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -100,6 +100,20 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
     buildTarget: Server
+    maxTextureSize: 2048
+    maxPlaceholderSize: 32
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: PlayableAds
     maxTextureSize: 2048
     maxPlaceholderSize: 32
     resizeAlgorithm: 0
