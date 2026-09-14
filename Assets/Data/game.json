@@ -1,0 +1,619 @@
+{
+    "level_1_upgrades": {
+        "workers": [{
+                "id": "player",
+                "name": "PLAYER",
+                "upgrades": {
+                    "stack": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 3
+                        },
+                        {
+                            "level": 2,
+                            "cost": 100,
+                            "value": 4
+                        },
+                        {
+                            "level": 3,
+                            "cost": 250,
+                            "value": 5
+                        },
+                        {
+                            "level": 4,
+                            "cost": 500,
+                            "value": 6
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1000,
+                            "value": 7
+                        }
+                    ]
+                }
+            },
+            {
+                "id": "shelver_a",
+                "name": "Shelver A",
+                "upgrades": {
+                    "stack": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 2
+                        },
+                        {
+                            "level": 2,
+                            "cost": 150,
+                            "value": 3
+                        },
+                        {
+                            "level": 3,
+                            "cost": 300,
+                            "value": 4
+                        },
+                        {
+                            "level": 4,
+                            "cost": 600,
+                            "value": 5
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1000,
+                            "value": 6
+                        }
+                    ],
+                    "speed": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 8
+                        },
+                        {
+                            "level": 2,
+                            "cost": 150,
+                            "value": 10
+                        },
+                        {
+                            "level": 3,
+                            "cost": 300,
+                            "value": 12
+                        },
+                        {
+                            "level": 4,
+                            "cost": 600,
+                            "value": 14
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1000,
+                            "value": 16
+                        }
+                    ]
+                }
+            },
+            {
+                "id": "chef",
+                "name": "Chef",
+                "upgrades": {
+                    "stack": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 2
+                        },
+                        {
+                            "level": 2,
+                            "cost": 200,
+                            "value": 3
+                        },
+                        {
+                            "level": 3,
+                            "cost": 400,
+                            "value": 4
+                        },
+                        {
+                            "level": 4,
+                            "cost": 800,
+                            "value": 5
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1000,
+                            "value": 6
+                        }
+                    ],
+                    "speed": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 8
+                        },
+                        {
+                            "level": 2,
+                            "cost": 200,
+                            "value": 10
+                        },
+                        {
+                            "level": 3,
+                            "cost": 400,
+                            "value": 12
+                        },
+                        {
+                            "level": 4,
+                            "cost": 800,
+                            "value": 14
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1000,
+                            "value": 16
+                        }
+                    ]
+                }
+            },
+            {
+                "id": "farmer",
+                "name": "Farmer",
+                "upgrades": {
+                    "stack": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 2
+                        },
+                        {
+                            "level": 2,
+                            "cost": 200,
+                            "value": 3
+                        },
+                        {
+                            "level": 3,
+                            "cost": 400,
+                            "value": 4
+                        },
+                        {
+                            "level": 4,
+                            "cost": 800,
+                            "value": 5
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1000,
+                            "value": 6
+                        }
+                    ],
+                    "speed": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 8
+                        },
+                        {
+                            "level": 2,
+                            "cost": 200,
+                            "value": 10
+                        },
+                        {
+                            "level": 3,
+                            "cost": 400,
+                            "value": 12
+                        },
+                        {
+                            "level": 4,
+                            "cost": 800,
+                            "value": 14
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1000,
+                            "value": 16
+                        }
+                    ]
+                }
+            },
+            {
+                "id": "shelver_b",
+                "name": "Shelver B",
+                "upgrades": {
+                    "stack": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 2
+                        },
+                        {
+                            "level": 2,
+                            "cost": 250,
+                            "value": 3
+                        },
+                        {
+                            "level": 3,
+                            "cost": 500,
+                            "value": 4
+                        },
+                        {
+                            "level": 4,
+                            "cost": 1000,
+                            "value": 4
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1000,
+                            "value": 5
+                        }
+                    ],
+                    "speed": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 8
+                        },
+                        {
+                            "level": 2,
+                            "cost": 250,
+                            "value": 10
+                        },
+                        {
+                            "level": 3,
+                            "cost": 500,
+                            "value": 12
+                        },
+                        {
+                            "level": 4,
+                            "cost": 1000,
+                            "value": 14
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1000,
+                            "value": 16
+                        }
+                    ]
+                }
+            }
+        ],
+        "machines": [{
+                "id": "blender",
+                "name": "Blender",
+                "upgrades": {
+                    "stack": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 4
+                        },
+                        {
+                            "level": 2,
+                            "cost": 300,
+                            "value": 5
+                        },
+                        {
+                            "level": 3,
+                            "cost": 600,
+                            "value": 6
+                        },
+                        {
+                            "level": 4,
+                            "cost": 1000,
+                            "value": 7
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1000,
+                            "value": 8
+                        }
+                    ],
+                    "speed": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 3.0
+                        },
+                        {
+                            "level": 2,
+                            "cost": 150,
+                            "value": 2.5
+                        },
+                        {
+                            "level": 3,
+                            "cost": 300,
+                            "value": 2.0
+                        },
+                        {
+                            "level": 4,
+                            "cost": 600,
+                            "value": 1.5
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1200,
+                            "value": 1.0
+                        }
+                    ]
+                }
+            },
+            {
+                "id": "bread_oven",
+                "name": "Bread Oven",
+                "upgrades": {
+                    "stack": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 4
+                        },
+                        {
+                            "level": 2,
+                            "cost": 350,
+                            "value": 5
+                        },
+                        {
+                            "level": 3,
+                            "cost": 700,
+                            "value": 6
+                        },
+                        {
+                            "level": 4,
+                            "cost": 1400,
+                            "value": 7
+                        },
+                        {
+                            "level": 5,
+                            "cost": 2800,
+                            "value": 8
+                        }
+                    ],
+                    "speed": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 3.0
+                        },
+                        {
+                            "level": 2,
+                            "cost": 175,
+                            "value": 2.5
+                        },
+                        {
+                            "level": 3,
+                            "cost": 350,
+                            "value": 2.0
+                        },
+                        {
+                            "level": 4,
+                            "cost": 700,
+                            "value": 1.5
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1400,
+                            "value": 1.0
+                        }
+                    ]
+                }
+            },
+            {
+                "id": "wheat_mill",
+                "name": "Wheat Mill",
+                "upgrades": {
+                    "stack": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 4
+                        },
+                        {
+                            "level": 2,
+                            "cost": 400,
+                            "value": 5
+                        },
+                        {
+                            "level": 3,
+                            "cost": 800,
+                            "value": 6
+                        },
+                        {
+                            "level": 4,
+                            "cost": 1600,
+                            "value": 7
+                        },
+                        {
+                            "level": 5,
+                            "cost": 3200,
+                            "value": 8
+                        }
+                    ],
+                    "speed": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 3.0
+                        },
+                        {
+                            "level": 2,
+                            "cost": 200,
+                            "value": 2.5
+                        },
+                        {
+                            "level": 3,
+                            "cost": 400,
+                            "value": 2.0
+                        },
+                        {
+                            "level": 4,
+                            "cost": 800,
+                            "value": 1.5
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1600,
+                            "value": 1.0
+                        }
+                    ]
+                }
+            }
+        ],
+        "animals": [{
+                "id": "chicken_a",
+                "name": "Chicken A",
+                "upgrades": {
+                    "stack": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 4
+                        },
+                        {
+                            "level": 2,
+                            "cost": 200,
+                            "value": 5
+                        },
+                        {
+                            "level": 3,
+                            "cost": 500,
+                            "value": 6
+                        },
+                        {
+                            "level": 4,
+                            "cost": 1000,
+                            "value": 7
+                        },
+                        {
+                            "level": 5,
+                            "cost": 2000,
+                            "value": 8
+                        }
+                    ],
+                    "speed": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 3.0
+                        },
+                        {
+                            "level": 2,
+                            "cost": 100,
+                            "value": 2.5
+                        },
+                        {
+                            "level": 3,
+                            "cost": 200,
+                            "value": 2.0
+                        },
+                        {
+                            "level": 4,
+                            "cost": 400,
+                            "value": 1.5
+                        },
+                        {
+                            "level": 5,
+                            "cost": 800,
+                            "value": 1.0
+                        }
+                    ]
+                }
+            },
+            {
+                "id": "chicken_b",
+                "name": "Chicken B",
+                "upgrades": {
+                    "stack": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 4
+                        },
+                        {
+                            "level": 2,
+                            "cost": 250,
+                            "value": 5
+                        },
+                        {
+                            "level": 3,
+                            "cost": 600,
+                            "value": 6
+                        },
+                        {
+                            "level": 4,
+                            "cost": 1000,
+                            "value": 7
+                        },
+                        {
+                            "level": 5,
+                            "cost": 2000,
+                            "value": 8
+                        }
+                    ],
+                    "speed": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 3.0
+                        },
+                        {
+                            "level": 2,
+                            "cost": 125,
+                            "value": 2.5
+                        },
+                        {
+                            "level": 3,
+                            "cost": 250,
+                            "value": 2.0
+                        },
+                        {
+                            "level": 4,
+                            "cost": 500,
+                            "value": 1.5
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1000,
+                            "value": 1.0
+                        }
+                    ]
+                }
+            },
+            {
+                "id": "cow",
+                "name": "Cow",
+                "upgrades": {
+                    "stack": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 4
+                        },
+                        {
+                            "level": 2,
+                            "cost": 400,
+                            "value": 5
+                        },
+                        {
+                            "level": 3,
+                            "cost": 1000,
+                            "value": 6
+                        },
+                        {
+                            "level": 4,
+                            "cost": 1000,
+                            "value": 7
+                        },
+                        {
+                            "level": 5,
+                            "cost": 2000,
+                            "value": 8
+                        }
+                    ],
+                    "speed": [{
+                            "level": 1,
+                            "cost": 0,
+                            "value": 3.0
+                        },
+                        {
+                            "level": 2,
+                            "cost": 200,
+                            "value": 2.5
+                        },
+                        {
+                            "level": 3,
+                            "cost": 400,
+                            "value": 2.0
+                        },
+                        {
+                            "level": 4,
+                            "cost": 800,
+                            "value": 1.5
+                        },
+                        {
+                            "level": 5,
+                            "cost": 1600,
+                            "value": 1.0
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
