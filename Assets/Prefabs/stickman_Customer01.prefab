@@ -187,15 +187,11 @@ MonoBehaviour:
   moveSpeed: 10
   handCarryStoppingDistance: 5
   trolleyStoppingDistance: 8
-  shoppingList:
-  - itemType: 3
-    itemIcon: {fileID: 21300000, guid: b9f1eace059bc498d8e3bd36318f4f75, type: 3}
-    targetAmount: 2
-    collectedAmount: 0
-  - itemType: 8
-    itemIcon: {fileID: 21300000, guid: 8fcce5513213f4230bef6ce5f52f5693, type: 3}
-    targetAmount: 3
-    collectedAmount: 0
+  checkoutIcon: {fileID: 21300000, guid: 76867b8426b6643fd938f4839b097b38, type: 3}
+  happyIcon: {fileID: 21300000, guid: a4379ee01670d4b538d899cf168684c7, type: 3}
+  queueSpacing: 3
+  payTime: 5
+  shoppingList: []
   thoughtBubble: {fileID: 9018321912501997317}
   iconImage: {fileID: 3081096405581864121}
   numText: {fileID: 782383786926817723}
@@ -676,7 +672,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8fcce5513213f4230bef6ce5f52f5693, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a4379ee01670d4b538d899cf168684c7, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1

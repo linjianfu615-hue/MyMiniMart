@@ -716,6 +716,53 @@
                     ]
                 }
             }
-        ]
+        ],
+        "customers": [{
+            "id": "customer_capacity",
+            "name": "Customer Capacity",
+            "upgrades": {
+                "count": [{
+                        "level": 1,
+                        "cost": 0,
+                        "value": 1
+                    },
+                    {
+                        "level": 2,
+                        "cost": 50,
+                        "value": 2
+                    },
+                    {
+                        "level": 3,
+                        "cost": 150,
+                        "value": 3
+                    },
+                    {
+                        "level": 4,
+                        "cost": 300,
+                        "value": 4
+                    },
+                    {
+                        "level": 5,
+                        "cost": 600,
+                        "value": 5
+                    },
+                    {
+                        "level": 6,
+                        "cost": 1000,
+                        "value": 6
+                    },
+                    {
+                        "level": 7,
+                        "cost": 1500,
+                        "value": 7
+                    },
+                    {
+                        "level": 8,
+                        "cost": 2500,
+                        "value": 8
+                    }
+                ]
+            }
+        }]
     }
 }

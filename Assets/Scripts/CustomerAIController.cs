@@ -23,7 +23,7 @@ public class CustomerAIController : MonoBehaviour
 
     [Header("收银台排队设置")]
     public Sprite checkoutIcon;
-    [Tooltip("排队时向右侧间隔的距离")]
+    public Sprite happyIcon;
     public float queueSpacing = 3.0f;
     public float payTime = 2.0f;
 
@@ -32,6 +32,7 @@ public class CustomerAIController : MonoBehaviour
     // ==========================================
     private static List<CustomerAIController> checkoutQueue = new List<CustomerAIController>();
     public static List<CustomerAIController> allActiveCustomers = new List<CustomerAIController>();
+
     private static Transform globalPaymentPoint;
 
     [Header("购物清单配置")]
@@ -59,7 +60,6 @@ public class CustomerAIController : MonoBehaviour
     public string animRunCarry = "Run_Carry";
     public string animRunTrolley = "Run_Net";
 
-    [Header("防拥挤设置")]
     public float interactRadius = 1.5f;
 
     private NavMeshAgent agent;
@@ -85,6 +85,11 @@ public class CustomerAIController : MonoBehaviour
     private void Start()
     {
         if (!allActiveCustomers.Contains(this)) allActiveCustomers.Add(this);
+    }
+
+    public void InjectShoppingList(List<ShoppingRequest> dynamicList)
+    {
+        shoppingList = dynamicList;
         InitCustomer();
     }
 
@@ -96,7 +101,13 @@ public class CustomerAIController : MonoBehaviour
 
     public void InitCustomer()
     {
-        useTrolley = shoppingList.Count >= 3;
+        int totalItemsNeeded = 0;
+        foreach (var req in shoppingList)
+        {
+            totalItemsNeeded += req.targetAmount;
+        }
+
+        useTrolley = totalItemsNeeded >= 3;
 
         if (useTrolley)
         {
@@ -164,7 +175,12 @@ public class CustomerAIController : MonoBehaviour
         {
             if (checkoutIcon != null)
             {
+                thoughtBubble.SetActive(true);
                 iconImage.sprite = checkoutIcon;
+
+                // 结账图标变大到 200x200
+                iconImage.rectTransform.sizeDelta = new Vector2(200f, 200f);
+
                 numText.text = "";
             }
 
@@ -240,7 +256,6 @@ public class CustomerAIController : MonoBehaviour
             targetIndex = officialCount + walkers.IndexOf(this);
         }
 
-        // 【修改点】：恢复为你测试成功的局部 -right 方向！
         Vector3 targetPos = globalPaymentPoint.position - globalPaymentPoint.right * (targetIndex * queueSpacing);
 
         Vector3 pos2D = new Vector3(transform.position.x, 0, transform.position.z);
@@ -255,11 +270,11 @@ public class CustomerAIController : MonoBehaviour
             Vector3 lookDir;
             if (targetIndex == 0)
             {
-                lookDir = globalPaymentPoint.forward; // 第一名看向收银员
+                lookDir = globalPaymentPoint.forward;
             }
             else
             {
-                lookDir = globalPaymentPoint.position - transform.position; // 后排看往前排
+                lookDir = globalPaymentPoint.position - transform.position;
             }
 
             lookDir.y = 0;
@@ -297,12 +312,33 @@ public class CustomerAIController : MonoBehaviour
         if (interactTimer >= payTime)
         {
             if (checkoutQueue.Contains(this)) checkoutQueue.Remove(this);
-            thoughtBubble.SetActive(false);
+
+            if (happyIcon != null)
+            {
+                thoughtBubble.SetActive(true);
+                iconImage.sprite = happyIcon;
+
+                // 笑脸图标变大到 200x200
+                iconImage.rectTransform.sizeDelta = new Vector2(200f, 200f);
+
+                numText.text = "";
+            }
+            else
+            {
+                thoughtBubble.SetActive(false);
+            }
 
             agent.stoppingDistance = useTrolley ? trolleyStoppingDistance : handCarryStoppingDistance;
-
             agent.isStopped = false;
-            agent.SetDestination(transform.position + new Vector3(0, 0, -30f));
+
+            if (GameManager.Instance != null && GameManager.Instance.exitPoint != null)
+            {
+                agent.SetDestination(GameManager.Instance.exitPoint.position);
+            }
+            else
+            {
+                agent.SetDestination(transform.position + new Vector3(0, 0, -30f));
+            }
 
             currentState = CustomerState.Leaving;
         }
@@ -320,6 +356,7 @@ public class CustomerAIController : MonoBehaviour
     {
         if (checkoutQueue.Contains(this)) checkoutQueue.Remove(this);
         if (allActiveCustomers.Contains(this)) allActiveCustomers.Remove(this);
+        if (GameManager.Instance != null) GameManager.Instance.OnCustomerLeft();
         CloseFridgeDoor();
     }
 
@@ -384,10 +421,15 @@ public class CustomerAIController : MonoBehaviour
     private void AttachItemToCustomer(GameObject item)
     {
         item.transform.DOKill();
+
+        // ==========================================
+        // 【已修复Bug】：去掉了 totalCollectedItems - 1
+        // 第 1 件物品高度永远为 0，绝对不会钻入地下！
+        // ==========================================
         if (useTrolley)
         {
-            int slotIndex = Mathf.Min(totalCollectedItems - 1, trolleySlots.Length - 1);
-            Transform targetSlot = trolleySlots[Mathf.Max(0, slotIndex)];
+            int slotIndex = Mathf.Min(totalCollectedItems, trolleySlots.Length - 1);
+            Transform targetSlot = trolleySlots[slotIndex];
 
             item.transform.SetParent(targetSlot);
             item.transform.DOScale(Vector3.one, 0.2f);
@@ -399,7 +441,7 @@ public class CustomerAIController : MonoBehaviour
             item.transform.SetParent(carrySocket);
             item.transform.DOScale(Vector3.one, 0.2f);
 
-            Vector3 targetLocalPos = new Vector3(0, (totalCollectedItems - 1) * itemHeightOffset, 0);
+            Vector3 targetLocalPos = new Vector3(0, totalCollectedItems * itemHeightOffset, 0);
             item.transform.DOLocalJump(targetLocalPos, 0.5f, 1, 0.3f);
             item.transform.DOLocalRotate(Vector3.zero, 0.3f);
         }
@@ -413,6 +455,10 @@ public class CustomerAIController : MonoBehaviour
             ShoppingRequest currentReq = shoppingList[currentRequestIndex];
 
             iconImage.sprite = currentReq.itemIcon;
+
+            // 正常购物时，图标恢复为 150x150
+            iconImage.rectTransform.sizeDelta = new Vector2(150f, 150f);
+
             numText.text = $"{currentReq.collectedAmount}/{currentReq.targetAmount}";
         }
         else

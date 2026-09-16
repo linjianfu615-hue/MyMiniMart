@@ -1,82 +1,162 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// 游戏管理器(处理游戏初始化、存档、读档的逻辑)
-/// </summary>
+[System.Serializable]
+public class ItemIconMapping
+{
+    [Tooltip("物品类型枚举")]
+    public ItemType itemType;
+    [Tooltip("对应的 UI 气泡图标")]
+    public Sprite itemIcon;
+}
 
 public class GameManager : MonoBehaviour
 {
-    // [Header("场景中需要履约存档的建筑群")]
-    // public List<BaseStructure> allStructures;
+    public static GameManager Instance { get; private set; }
 
-    // 伪代码定义玩家引用
-    // public PlayerController player; 
-    // public int currentMoney;
+    [Header("顾客生成配置")]
+    [Tooltip("拖入制作好的顾客 Prefab")]
+    public GameObject customerPrefab;
+    [Tooltip("拖入 CustomerSpawnPoint 根节点")]
+    public Transform spawnPointParent;
+    [Tooltip("拖入场景中顾客结账后离开的统一出口点")]
+    public Transform exitPoint; // 【新增】由 GameManager 统一管理出口点
+
+    [Header("图标配置字典")]
+    public List<ItemIconMapping> itemIconDatabase = new List<ItemIconMapping>();
+
+    [Header("升级数据")]
+    public int currentCustomerCapacity = 1;
+    public int maxCustomerCapacity = 8;
+    public int currentActiveCustomers = 0;
+
+    private int[] upgradeCosts = { 0, 50, 150, 300, 600, 1000, 1500, 2500 };
+
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
+    }
 
     private void Start()
     {
-        LoadGameProgress();
-    }
-
-    private void OnApplicationQuit()
-    {
-        SaveGameProgress();
-    }
-
-    // 切后台时自动存档（针对手机端常态优化）
-    private void OnApplicationFocus(bool focus)
-    {
-        if (!focus) SaveGameProgress();
-    }
-
-    public void SaveGameProgress()
-    {
-        GameSaveRoot root = new GameSaveRoot();
-
-        // 1. 采集玩家数据
-        root.playerData.currentMoney = 1000; // 替换为真实的钱包变量
-        root.playerData.playerSpeedLevel = 1;
-        root.playerData.playerCapacityLevel = 1;
-
-        // 2. 采集所有建筑状态
-        // foreach (var structObj in allStructures)
-        // {
-        //     StructureSaveData sData = new StructureSaveData
-        //     {
-        //         structureID = structObj.structureID,
-        //         isUnlocked = structObj.gameObject.activeSelf, // 如果物体隐藏代表未解锁
-        //         currentItemCount = structObj.CurrentCount
-        //     };
-        //     root.structuresData.Add(sData);
-        // }
-
-        SaveManager.Instance.SaveGame(root);
-    }
-
-    public void LoadGameProgress()
-    {
-        GameSaveRoot root = SaveManager.Instance.LoadGame();
-        if (root == null)
+        for (int i = 0; i < currentCustomerCapacity; i++)
         {
-            // 执行第一关全新初始化（参考前文数值表格：解锁免费番茄地，隐藏其他）
-            return;
+            SpawnSingleCustomer();
+        }
+    }
+
+    public int GetNextCustomerCost()
+    {
+        if (currentCustomerCapacity < maxCustomerCapacity)
+            return upgradeCosts[currentCustomerCapacity];
+        return -1;
+    }
+
+    public bool TryBuyCustomer()
+    {
+        if (currentCustomerCapacity >= maxCustomerCapacity) return false;
+
+        int cost = GetNextCustomerCost();
+        // 预留扣钱逻辑
+        // if (PlayerWallet.Coins < cost) return false;
+        // PlayerWallet.Coins -= cost;
+
+        currentCustomerCapacity++;
+        SpawnSingleCustomer();
+        return true;
+    }
+
+    public void SpawnSingleCustomer()
+    {
+        if (customerPrefab == null || spawnPointParent == null || spawnPointParent.childCount == 0) return;
+
+        int randomIndex = Random.Range(0, spawnPointParent.childCount);
+        Transform spawnPt = spawnPointParent.GetChild(randomIndex);
+
+        GameObject newCustomerObj = Instantiate(customerPrefab, spawnPt.position, spawnPt.rotation);
+        CustomerAIController customerAI = newCustomerObj.GetComponent<CustomerAIController>();
+
+        List<ShoppingRequest> dynamicList = GenerateDynamicShoppingList();
+
+        if (customerAI != null)
+        {
+            customerAI.InjectShoppingList(dynamicList);
         }
 
-        // 1. 恢复玩家属性
-        // wallet.SetMoney(root.playerData.currentMoney);
+        currentActiveCustomers++;
+    }
 
-        // 2. 恢复场景设施
-        // foreach (var sData in root.structuresData)
-        // {
-        //     // 在列表中匹配对应的物体
-        //     BaseStructure match = allStructures.Find(x => x.structureID == sData.structureID);
-        //     if (match != null)
-        //     {
-        //         match.gameObject.SetActive(sData.isUnlocked);
+    private List<ShoppingRequest> GenerateDynamicShoppingList()
+    {
+        List<ShoppingRequest> requests = new List<ShoppingRequest>();
+        List<ItemType> unlockedItems = new List<ItemType>();
 
-        //         // 还可以根据 sData.currentItemCount 用循环给它塞入对应数量的初始商品
-        //     }
-        // }
+        foreach (var shelf in FacilityManager.Instance.allShelves)
+        {
+            if (shelf.gameObject.activeInHierarchy && shelf.acceptedItemType != ItemType.None)
+            {
+                if (!unlockedItems.Contains(shelf.acceptedItemType))
+                {
+                    unlockedItems.Add(shelf.acceptedItemType);
+                }
+            }
+        }
+
+        if (unlockedItems.Count == 0) return requests;
+
+        int kindsWanted = Random.Range(1, Mathf.Min(4, unlockedItems.Count + 1));
+        ShuffleList(unlockedItems);
+
+        int totalItemsCount = 0;
+
+        for (int i = 0; i < kindsWanted; i++)
+        {
+            ItemType wantedType = unlockedItems[i];
+            ShoppingRequest newReq = new ShoppingRequest();
+            newReq.itemType = wantedType;
+
+            newReq.targetAmount = Random.Range(1, 4);
+
+            if (totalItemsCount + newReq.targetAmount > 12)
+            {
+                newReq.targetAmount = 12 - totalItemsCount;
+            }
+
+            if (newReq.targetAmount <= 0) break;
+
+            newReq.itemIcon = GetIconForType(wantedType);
+            requests.Add(newReq);
+
+            totalItemsCount += newReq.targetAmount;
+        }
+
+        return requests;
+    }
+
+    private Sprite GetIconForType(ItemType type)
+    {
+        foreach (var mapping in itemIconDatabase)
+        {
+            if (mapping.itemType == type) return mapping.itemIcon;
+        }
+        return null;
+    }
+
+    private void ShuffleList<T>(List<T> list)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            T temp = list[i];
+            int randomIndex = Random.Range(i, list.Count);
+            list[i] = list[randomIndex];
+            list[randomIndex] = temp;
+        }
+    }
+
+    public void OnCustomerLeft()
+    {
+        currentActiveCustomers--;
+        Invoke(nameof(SpawnSingleCustomer), Random.Range(2f, 4f));
     }
 }
