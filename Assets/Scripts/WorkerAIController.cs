@@ -138,27 +138,20 @@ public class WorkerAIController : BaseCharacterController
 
         ItemType? holdingType = GetHoldingItemType();
 
-        // =========================================================
-        // 【第一阶段：进货】 (根据模板，智能读取配方缺口)
-        // =========================================================
         if (!IsFull)
         {
             foreach (var task in tasks)
             {
-                // 获取这个模板对应的所有真实机器，当前急需的原料类型
                 List<ItemType> neededTypes = GetNeededTypesForTemplate(task);
 
                 foreach (ItemType neededType in neededTypes)
                 {
-                    // 防止左手拿鸡蛋，右手去拿面粉
                     if (holdingType.HasValue && holdingType.Value != neededType) continue;
 
-                    // 计算全场真实机器的该原料总缺口
                     int totalMissing = GetTotalMissingNeedsForTemplate(task, neededType);
 
                     if (totalMissing > 0 && carriedItems.Count < totalMissing)
                     {
-                        // 去全场找有这种原料产出的机器
                         BaseProductionMachine availableSource = FindAvailableSourceFromManager(neededType);
                         if (availableSource != null)
                         {
@@ -173,21 +166,16 @@ public class WorkerAIController : BaseCharacterController
             }
         }
 
-        // =========================================================
-        // 【第二阶段：送货】 (寻找符合模板的真实机器投递)
-        // =========================================================
         if (HasItems && holdingType.HasValue)
         {
             bool isAllTargetsReallyFull = true;
 
             foreach (var task in tasks)
             {
-                // 1. 如果模板是货架
                 if (task.targetShelf != null)
                 {
                     foreach (var runtimeShelf in FacilityManager.Instance.allShelves)
                     {
-                        // 【黑科技匹配】：判断类型是否一致，直接对比接受的物品类型！
                         if (runtimeShelf.acceptedItemType == task.targetShelf.acceptedItemType)
                         {
                             if (runtimeShelf.acceptedItemType == holdingType.Value && !runtimeShelf.IsFull)
@@ -208,12 +196,10 @@ public class WorkerAIController : BaseCharacterController
                     }
                 }
 
-                // 2. 如果模板是加工机器
                 if (task.targetMachine != null)
                 {
                     foreach (var runtimeMachine in FacilityManager.Instance.allConsumers)
                     {
-                        // 【黑科技匹配】：通过判断产出物是否一样，来确定是不是同一种机器！（不怕改名字，极其稳定）
                         if (runtimeMachine.targetProductPrefab == task.targetMachine.targetProductPrefab)
                         {
                             if (MachineNeedsType(runtimeMachine, holdingType.Value))
@@ -256,9 +242,6 @@ public class WorkerAIController : BaseCharacterController
             }
         }
 
-        // =========================================================
-        // 【第三阶段：回家】
-        // =========================================================
         if (!HasItems)
         {
             float distToHome = Vector3.Distance(transform.position, startPosition);
@@ -277,6 +260,8 @@ public class WorkerAIController : BaseCharacterController
         if (!sourceType.HasValue) { ChangeState(AIState.Idle); return; }
 
         int totalMissing = GetTotalMissingNeedsForTemplate(currentTask, sourceType.Value);
+
+        // 核心拿取控制逻辑：缺口 - 已经拿在手上的数量 = 还需要拿的数量
         int stillNeedToCollect = totalMissing - carriedItems.Count;
 
         if (IsFull || stillNeedToCollect <= 0 || currentTask.dynamicSource.readyProducts.Count == 0)
@@ -346,9 +331,6 @@ public class WorkerAIController : BaseCharacterController
     // 【模板匹配核心算法】
     // =========================================================
 
-    /// <summary>
-    /// 根据任务模板，分析全场同类机器当前【急需】的所有原料类型
-    /// </summary>
     private List<ItemType> GetNeededTypesForTemplate(WorkerTask task)
     {
         List<ItemType> neededTypes = new List<ItemType>();
@@ -367,7 +349,6 @@ public class WorkerAIController : BaseCharacterController
         {
             foreach (var runtimeMachine in FacilityManager.Instance.allConsumers)
             {
-                // 通过比对产出预制体，判断是否是同一种机器（最安全稳定的方法）
                 if (runtimeMachine.targetProductPrefab == task.targetMachine.targetProductPrefab)
                 {
                     foreach (var req in runtimeMachine.inputRequirements)
@@ -395,7 +376,11 @@ public class WorkerAIController : BaseCharacterController
             {
                 if (runtimeShelf.acceptedItemType == task.targetShelf.acceptedItemType && runtimeShelf.acceptedItemType == type && !runtimeShelf.IsFull)
                 {
-                    totalNeed += 99;
+                    // ===============================================================
+                    // 【已修复 BUG】：读取真实的货架缺口数据 (MissingCount)
+                    // 不再盲目填充，货架缺几个，这里就加上几个！
+                    // ===============================================================
+                    totalNeed += runtimeShelf.MissingCount;
                 }
             }
         }

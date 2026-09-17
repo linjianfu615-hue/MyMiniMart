@@ -19,7 +19,6 @@ public class ShelfManager : MonoBehaviour
     // 精准记录每个槽位上当前摆放的物品
     private GameObject[] slotOccupants;
 
-    // ================== 新增：交互动画设置 ==================
     [Header("动画设置 (Animation - Optional)")]
     [Tooltip("如果货架有开关门动画（如冰箱），拖入带有该动画的 Animation 组件")]
     public Animation animComponent;
@@ -27,14 +26,8 @@ public class ShelfManager : MonoBehaviour
     public string openAnimName = "fridge_open";
     public string closeAnimName = "fridge_close";
 
-    // 精准记录当前在区域内的角色数量（防止一人离开，门就把另一个还在里面的人关了）
     private int entitiesInZone = 0;
-    // ========================================================
 
-
-    // =======================================================
-    // 【核心补充】：生命周期注册，让 AI 知道这个货架的存在
-    // =======================================================
     private void OnEnable()
     {
         if (FacilityManager.Instance != null) FacilityManager.Instance.RegisterShelf(this);
@@ -45,31 +38,21 @@ public class ShelfManager : MonoBehaviour
         if (FacilityManager.Instance != null) FacilityManager.Instance.UnregisterShelf(this);
     }
 
-    /// <summary>
-    /// 当任何角色（玩家/AI）进入交互区时调用
-    /// </summary>
     public void OnEntityEnter()
     {
         entitiesInZone++;
-
-        // 只有第一个人进入时，才播放开门动画
         if (entitiesInZone == 1 && animComponent != null && !string.IsNullOrEmpty(openAnimName))
         {
             animComponent.CrossFade(openAnimName, 0.15f);
         }
     }
 
-    /// <summary>
-    /// 当任何角色（玩家/AI）离开交互区时调用
-    /// </summary>
     public void OnEntityExit()
     {
         entitiesInZone--;
-
         if (entitiesInZone <= 0)
         {
             entitiesInZone = 0;
-            // 当最后一个人离开时，才播放关门动画
             if (animComponent != null && !string.IsNullOrEmpty(closeAnimName))
             {
                 animComponent.CrossFade(closeAnimName, 0.15f);
@@ -77,9 +60,6 @@ public class ShelfManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 判断货架是否已满
-    /// </summary>
     public bool IsFull
     {
         get
@@ -87,15 +67,12 @@ public class ShelfManager : MonoBehaviour
             if (slotOccupants == null) return true;
             foreach (var occ in slotOccupants)
             {
-                if (occ == null) return false; // 有空位就不算满
+                if (occ == null) return false;
             }
             return true;
         }
     }
 
-    /// <summary>
-    /// 判断货架是否为空（供顾客AI判断是否还有东西可拿）
-    /// </summary>
     public bool IsEmpty
     {
         get
@@ -103,9 +80,27 @@ public class ShelfManager : MonoBehaviour
             if (slotOccupants == null) return true;
             foreach (var occ in slotOccupants)
             {
-                if (occ != null) return false; // 有东西就不算空
+                if (occ != null) return false;
             }
             return true;
+        }
+    }
+
+    // =======================================================
+    // 【新增核心】：暴露缺口数量，供 WorkerAI 精准补货
+    // =======================================================
+    public int MissingCount
+    {
+        get
+        {
+            if (slotOccupants == null) return 0;
+            int count = 0;
+            for (int i = 0; i < slotOccupants.Length; i++)
+            {
+                // 如果槽位是空的，说明缺 1 个
+                if (slotOccupants[i] == null) count++;
+            }
+            return count;
         }
     }
 
@@ -117,53 +112,36 @@ public class ShelfManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 供【玩家 / 工作者AI】调用：尝试将物品放上货架
-    /// </summary>
     public bool TryAddProduct(ItemType type, GameObject item)
     {
-        // 1. 类型不对，或者货架满了，直接拒收
         if (type != acceptedItemType || IsFull) return false;
 
-        // 2. 从前往后找一个空位 (Slot)
         for (int i = 0; i < slotOccupants.Length; i++)
         {
             if (slotOccupants[i] == null)
             {
-                // 标记该槽位被占用
                 slotOccupants[i] = item;
-
-                // 设置父节点为对应的 Slot
                 item.transform.SetParent(displaySlots[i], true);
                 item.transform.DOKill();
-
-                // 防抖缩放（防止继承奇怪的缩放比例）
                 item.transform.DOScale(Vector3.one, 0.2f);
-
-                // 抛物线飞到槽位正中心
                 item.transform.DOLocalJump(Vector3.zero, 0.01f, 1, placeAnimDuration);
                 item.transform.DOLocalRotate(Vector3.zero, placeAnimDuration);
-
                 return true;
             }
         }
         return false;
     }
 
-    /// <summary>
-    /// 供【顾客AI】调用：从货架上拿走物品
-    /// </summary>
     public GameObject TakeProduct()
     {
         if (IsEmpty) return null;
 
-        // 顾客通常是从后往前拿（后进先出），视觉上比较符合堆叠逻辑
         for (int i = slotOccupants.Length - 1; i >= 0; i--)
         {
             if (slotOccupants[i] != null)
             {
                 GameObject item = slotOccupants[i];
-                slotOccupants[i] = null; // 腾出这个槽位
+                slotOccupants[i] = null;
                 return item;
             }
         }
