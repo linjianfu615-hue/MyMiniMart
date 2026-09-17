@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.AI;
+using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 
@@ -18,25 +19,21 @@ public class CustomerAIController : MonoBehaviour
 {
     [Header("属性配置")]
     public float moveSpeed = 3.5f;
-    public float handCarryStoppingDistance = 5f;
-    public float trolleyStoppingDistance = 8f;
+    [Tooltip("手捧物品时离目标的距离")]
+    public float handCarryStoppingDistance = 1.5f;
+    [Tooltip("推推车时离目标的距离")]
+    public float trolleyStoppingDistance = 2.5f;
 
-    [Header("收银台排队设置")]
+    [Header("UI 及 打包设置")]
     public Sprite checkoutIcon;
     public Sprite happyIcon;
-    public float queueSpacing = 3.0f;
     public float payTime = 2.0f;
-
-    // ==========================================
-    // 全局静态数据
-    // ==========================================
-    private static List<CustomerAIController> checkoutQueue = new List<CustomerAIController>();
-    public static List<CustomerAIController> allActiveCustomers = new List<CustomerAIController>();
-
-    private static Transform globalPaymentPoint;
+    public GameObject boxPackagePrefab;
 
     [Header("购物清单配置")]
     public List<ShoppingRequest> shoppingList = new List<ShoppingRequest>();
+
+    private List<GameObject> collectedItemObjects = new List<GameObject>();
 
     [Header("UI 气泡组件")]
     public GameObject thoughtBubble;
@@ -47,7 +44,7 @@ public class CustomerAIController : MonoBehaviour
     public Transform carrySocket;
     public GameObject trolley;
     public Transform[] trolleySlots;
-    public float itemHeightOffset = 0.3f;
+    public float itemHeightOffset = 1.5f;
 
     [Header("动画配置")]
     public Animation animComponent;
@@ -62,6 +59,8 @@ public class CustomerAIController : MonoBehaviour
 
     public float interactRadius = 1.5f;
 
+    public bool HasTrolley => useTrolley;
+
     private NavMeshAgent agent;
     private enum CustomerState { Entering, FindingItem, MovingToShelf, Collecting, GoingToCheckout, Paying, Leaving }
     private CustomerState currentState = CustomerState.Entering;
@@ -70,10 +69,13 @@ public class CustomerAIController : MonoBehaviour
     private ShelfManager targetShelf;
     private ShelfManager currentOpenShelf;
 
+    private CheckoutCounter targetCheckoutCounter;
+
     private bool useTrolley = false;
     private int totalCollectedItems = 0;
     private float interactTimer = 0f;
     private float interactDelay = 0.3f;
+    private bool isPacking = false;
 
     private void Awake()
     {
@@ -82,21 +84,10 @@ public class CustomerAIController : MonoBehaviour
         agent.speed = moveSpeed;
     }
 
-    private void Start()
-    {
-        if (!allActiveCustomers.Contains(this)) allActiveCustomers.Add(this);
-    }
-
     public void InjectShoppingList(List<ShoppingRequest> dynamicList)
     {
         shoppingList = dynamicList;
         InitCustomer();
-    }
-
-    public void SetMoveSpeed(float newSpeed)
-    {
-        moveSpeed = newSpeed;
-        if (agent != null) agent.speed = moveSpeed;
     }
 
     public void InitCustomer()
@@ -107,7 +98,7 @@ public class CustomerAIController : MonoBehaviour
             totalItemsNeeded += req.targetAmount;
         }
 
-        useTrolley = totalItemsNeeded >= 3;
+        useTrolley = (shoppingList.Count > 1) && (totalItemsNeeded >= 3);
 
         if (useTrolley)
         {
@@ -177,14 +168,11 @@ public class CustomerAIController : MonoBehaviour
             {
                 thoughtBubble.SetActive(true);
                 iconImage.sprite = checkoutIcon;
-
-                // 结账图标变大到 200x200
                 iconImage.rectTransform.sizeDelta = new Vector2(200f, 200f);
-
                 numText.text = "";
             }
 
-            agent.stoppingDistance = 0.5f;
+            targetCheckoutCounter = GameManager.Instance.GetBestCheckoutCounter();
             currentState = CustomerState.GoingToCheckout;
             return;
         }
@@ -207,8 +195,14 @@ public class CustomerAIController : MonoBehaviour
                 Vector2 rand = Random.insideUnitCircle * 0.2f;
                 targetPos += new Vector3(rand.x, 0, rand.y);
 
+                // ==========================================
+                // 【已修复】：绝对遵从 Inspector 的距离设置！
+                // 去货架时，完美还原为你填写的参数，不再强制 0.1
+                // ==========================================
+                agent.stoppingDistance = useTrolley ? trolleyStoppingDistance : handCarryStoppingDistance;
                 agent.isStopped = false;
                 agent.SetDestination(targetPos);
+
                 currentState = CustomerState.MovingToShelf;
                 return;
             }
@@ -220,75 +214,47 @@ public class CustomerAIController : MonoBehaviour
 
     private void HandleQueueing()
     {
-        if (globalPaymentPoint == null)
-        {
-            GameObject pt = GameObject.Find("payment_Point");
-            if (pt != null) globalPaymentPoint = pt.transform;
-            else return;
-        }
+        if (targetCheckoutCounter == null) return;
 
-        int targetIndex = 0;
+        int myIndex = targetCheckoutCounter.customerQueue.IndexOf(this);
+        Vector3 targetPos = targetCheckoutCounter.GetQueuePosition(this);
 
-        if (checkoutQueue.Contains(this))
+        if (myIndex == -1)
         {
-            targetIndex = checkoutQueue.IndexOf(this);
-        }
-        else
-        {
-            int officialCount = checkoutQueue.Count;
-            List<CustomerAIController> walkers = new List<CustomerAIController>();
+            // 排队奔跑时临时把误差设小，以便精准入队
+            agent.stoppingDistance = 0.2f;
+            agent.isStopped = false;
+            agent.SetDestination(targetPos);
 
-            foreach (var c in allActiveCustomers)
+            Vector3 pos2D = new Vector3(transform.position.x, 0, transform.position.z);
+            Vector3 target2D = new Vector3(targetPos.x, 0, targetPos.z);
+
+            if (Vector3.Distance(pos2D, target2D) <= 1.0f)
             {
-                if (c != null && c.currentState == CustomerState.GoingToCheckout && !checkoutQueue.Contains(c))
-                {
-                    walkers.Add(c);
-                }
+                targetCheckoutCounter.JoinQueue(this);
             }
-
-            walkers.Sort((a, b) =>
-            {
-                float distA = Vector3.Distance(a.transform.position, globalPaymentPoint.position);
-                float distB = Vector3.Distance(b.transform.position, globalPaymentPoint.position);
-                return distA.CompareTo(distB);
-            });
-
-            targetIndex = officialCount + walkers.IndexOf(this);
+            return;
         }
 
-        Vector3 targetPos = globalPaymentPoint.position - globalPaymentPoint.right * (targetIndex * queueSpacing);
+        // 已经在队伍中时，必须强制脚踩着属于自己的排队圆点（所以队伍中是 0.1）
+        agent.stoppingDistance = 0.1f;
+        Vector3 myPos2D = new Vector3(transform.position.x, 0, transform.position.z);
+        Vector3 myTarget2D = new Vector3(targetPos.x, 0, targetPos.z);
+        float dist = Vector3.Distance(myPos2D, myTarget2D);
 
-        Vector3 pos2D = new Vector3(transform.position.x, 0, transform.position.z);
-        Vector3 target2D = new Vector3(targetPos.x, 0, targetPos.z);
-        float distToTarget = Vector3.Distance(pos2D, target2D);
-
-        if (distToTarget <= agent.stoppingDistance + 0.2f)
+        if (dist <= 0.3f)
         {
             agent.isStopped = true;
             agent.velocity = Vector3.zero;
 
-            Vector3 lookDir;
-            if (targetIndex == 0)
-            {
-                lookDir = globalPaymentPoint.forward;
-            }
-            else
-            {
-                lookDir = globalPaymentPoint.position - transform.position;
-            }
-
+            Vector3 lookDir = (myIndex == 0) ? targetCheckoutCounter.paymentPoint.forward : (targetCheckoutCounter.paymentPoint.position - transform.position);
             lookDir.y = 0;
             if (lookDir.sqrMagnitude > 0.01f)
             {
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(lookDir), Time.deltaTime * 10f);
             }
 
-            if (!checkoutQueue.Contains(this))
-            {
-                checkoutQueue.Add(this);
-            }
-
-            if (checkoutQueue.IndexOf(this) == 0)
+            if (myIndex == 0)
             {
                 interactTimer = 0f;
                 currentState = CustomerState.Paying;
@@ -303,45 +269,122 @@ public class CustomerAIController : MonoBehaviour
 
     private void HandlePaying()
     {
+        if (targetCheckoutCounter == null) return;
+
         agent.isStopped = true;
         agent.velocity = Vector3.zero;
-        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(globalPaymentPoint.forward), Time.deltaTime * 10f);
+        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(targetCheckoutCounter.paymentPoint.forward), Time.deltaTime * 10f);
 
-        interactTimer += Time.deltaTime;
-
-        if (interactTimer >= payTime)
+        if (!isPacking)
         {
-            if (checkoutQueue.Contains(this)) checkoutQueue.Remove(this);
-
-            if (happyIcon != null)
-            {
-                thoughtBubble.SetActive(true);
-                iconImage.sprite = happyIcon;
-
-                // 笑脸图标变大到 200x200
-                iconImage.rectTransform.sizeDelta = new Vector2(200f, 200f);
-
-                numText.text = "";
-            }
-            else
-            {
-                thoughtBubble.SetActive(false);
-            }
-
-            agent.stoppingDistance = useTrolley ? trolleyStoppingDistance : handCarryStoppingDistance;
-            agent.isStopped = false;
-
-            if (GameManager.Instance != null && GameManager.Instance.exitPoint != null)
-            {
-                agent.SetDestination(GameManager.Instance.exitPoint.position);
-            }
-            else
-            {
-                agent.SetDestination(transform.position + new Vector3(0, 0, -30f));
-            }
-
-            currentState = CustomerState.Leaving;
+            isPacking = true;
+            StartCoroutine(PackItemsRoutine());
         }
+    }
+
+    private IEnumerator PackItemsRoutine()
+    {
+        GameObject boxInstance = null;
+
+        if (boxPackagePrefab != null && targetCheckoutCounter != null && targetCheckoutCounter.boxPoint != null)
+        {
+            boxInstance = Instantiate(boxPackagePrefab, targetCheckoutCounter.boxPoint.position, targetCheckoutCounter.boxPoint.rotation);
+            Animation boxAnim = boxInstance.GetComponent<Animation>();
+            if (boxAnim != null)
+            {
+                boxAnim.Play("BoxOpen");
+                yield return new WaitForSeconds(0.4f);
+            }
+            else yield return new WaitForSeconds(0.2f);
+        }
+
+        if (boxInstance != null)
+        {
+            Transform inputGray = boxInstance.transform.Find("Input_Gray");
+            if (inputGray != null)
+            {
+                for (int i = 0; i < collectedItemObjects.Count; i++)
+                {
+                    GameObject item = collectedItemObjects[i];
+                    if (item == null) continue;
+
+                    Transform targetSlot = inputGray;
+                    if (i < inputGray.childCount) targetSlot = inputGray.GetChild(i);
+
+                    item.transform.SetParent(targetSlot);
+                    item.transform.DOLocalJump(Vector3.zero, 1.5f, 1, 0.25f);
+                    item.transform.DOLocalRotate(Vector3.zero, 0.25f);
+
+                    yield return new WaitForSeconds(0.15f);
+                }
+            }
+            yield return new WaitForSeconds(0.3f);
+
+            Animation boxAnim = boxInstance.GetComponent<Animation>();
+            if (boxAnim != null)
+            {
+                boxAnim.Play("BoxClose");
+                yield return new WaitForSeconds(0.5f);
+            }
+        }
+        else
+        {
+            yield return new WaitForSeconds(1.0f);
+        }
+
+        foreach (var item in collectedItemObjects)
+        {
+            if (item != null) Destroy(item);
+        }
+        collectedItemObjects.Clear();
+
+        if (useTrolley)
+        {
+            useTrolley = false;
+            trolley.SetActive(false);
+            carrySocket.gameObject.SetActive(true);
+        }
+
+        if (boxInstance != null)
+        {
+            boxInstance.transform.SetParent(carrySocket);
+            Vector3 targetBoxPos = new Vector3(0, 0, 0.8f);
+            boxInstance.transform.DOLocalJump(targetBoxPos, 1.5f, 1, 0.35f);
+            boxInstance.transform.DOLocalRotate(Vector3.zero, 0.35f);
+            yield return new WaitForSeconds(0.4f);
+        }
+
+        if (targetCheckoutCounter != null)
+        {
+            targetCheckoutCounter.LeaveQueue(this);
+        }
+
+        if (happyIcon != null)
+        {
+            thoughtBubble.SetActive(true);
+            iconImage.sprite = happyIcon;
+            iconImage.rectTransform.sizeDelta = new Vector2(200f, 200f);
+            numText.text = "";
+        }
+        else
+        {
+            thoughtBubble.SetActive(false);
+        }
+
+        // 离开场景不需要过于精确，0.5f 足够
+        agent.stoppingDistance = 0.5f;
+        agent.isStopped = false;
+
+        if (GameManager.Instance != null && GameManager.Instance.exitPoint != null)
+        {
+            agent.SetDestination(GameManager.Instance.exitPoint.position);
+        }
+        else
+        {
+            agent.SetDestination(transform.position + new Vector3(0, 0, -30f));
+        }
+
+        currentState = CustomerState.Leaving;
     }
 
     private void HandleLeaving()
@@ -354,8 +397,7 @@ public class CustomerAIController : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (checkoutQueue.Contains(this)) checkoutQueue.Remove(this);
-        if (allActiveCustomers.Contains(this)) allActiveCustomers.Remove(this);
+        if (targetCheckoutCounter != null) targetCheckoutCounter.LeaveQueue(this);
         if (GameManager.Instance != null) GameManager.Instance.OnCustomerLeft();
         CloseFridgeDoor();
     }
@@ -422,10 +464,11 @@ public class CustomerAIController : MonoBehaviour
     {
         item.transform.DOKill();
 
-        // ==========================================
-        // 【已修复Bug】：去掉了 totalCollectedItems - 1
-        // 第 1 件物品高度永远为 0，绝对不会钻入地下！
-        // ==========================================
+        if (!collectedItemObjects.Contains(item))
+        {
+            collectedItemObjects.Add(item);
+        }
+
         if (useTrolley)
         {
             int slotIndex = Mathf.Min(totalCollectedItems, trolleySlots.Length - 1);
@@ -441,6 +484,9 @@ public class CustomerAIController : MonoBehaviour
             item.transform.SetParent(carrySocket);
             item.transform.DOScale(Vector3.one, 0.2f);
 
+            // ==========================================
+            // 【已修复】：Y轴彻底解决了，第一个必定为 0！
+            // ==========================================
             Vector3 targetLocalPos = new Vector3(0, totalCollectedItems * itemHeightOffset, 0);
             item.transform.DOLocalJump(targetLocalPos, 0.5f, 1, 0.3f);
             item.transform.DOLocalRotate(Vector3.zero, 0.3f);
@@ -455,10 +501,7 @@ public class CustomerAIController : MonoBehaviour
             ShoppingRequest currentReq = shoppingList[currentRequestIndex];
 
             iconImage.sprite = currentReq.itemIcon;
-
-            // 正常购物时，图标恢复为 150x150
             iconImage.rectTransform.sizeDelta = new Vector2(150f, 150f);
-
             numText.text = $"{currentReq.collectedAmount}/{currentReq.targetAmount}";
         }
         else
@@ -520,7 +563,11 @@ public class CustomerAIController : MonoBehaviour
         if (targetShelf != null)
         {
             float distToShelf = Vector3.Distance(transform.position, targetShelf.transform.position);
-            if (distToShelf <= interactRadius && agent.velocity.sqrMagnitude < 0.05f) return true;
+
+            // 为了让停得比较远（如2.5）的推车也能触发交互，我们将交互半径设得和停止距离差不多
+            float currentInteractRadius = useTrolley ? trolleyStoppingDistance + 0.5f : interactRadius;
+
+            if (distToShelf <= currentInteractRadius && agent.velocity.sqrMagnitude < 0.05f) return true;
         }
 
         return false;

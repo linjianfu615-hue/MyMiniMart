@@ -186,11 +186,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 10
   handCarryStoppingDistance: 5
-  trolleyStoppingDistance: 8
+  trolleyStoppingDistance: 10
   checkoutIcon: {fileID: 21300000, guid: 76867b8426b6643fd938f4839b097b38, type: 3}
   happyIcon: {fileID: 21300000, guid: a4379ee01670d4b538d899cf168684c7, type: 3}
-  queueSpacing: 3
   payTime: 5
+  boxPackagePrefab: {fileID: 3868323882030345000, guid: 46f0e81c4af273c4a99905be904b5904, type: 3}
   shoppingList: []
   thoughtBubble: {fileID: 9018321912501997317}
   iconImage: {fileID: 3081096405581864121}
@@ -1361,7 +1361,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 301.5, y: -142.455}
-  m_SizeDelta: {x: 143, y: 164.91}
+  m_SizeDelta: {x: 0, y: 164.91}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5783204146607108516
 CanvasRenderer:

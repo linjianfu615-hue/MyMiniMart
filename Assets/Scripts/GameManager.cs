@@ -4,9 +4,7 @@ using System.Collections.Generic;
 [System.Serializable]
 public class ItemIconMapping
 {
-    [Tooltip("物品类型枚举")]
     public ItemType itemType;
-    [Tooltip("对应的 UI 气泡图标")]
     public Sprite itemIcon;
 }
 
@@ -14,13 +12,14 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    [Header("收银台管理 (支持多收银台)")]
+    [Tooltip("将场景中所有挂载了 CheckoutCounter 的收银台拖入此列表")]
+    public List<CheckoutCounter> allCheckoutCounters = new List<CheckoutCounter>();
+
     [Header("顾客生成配置")]
-    [Tooltip("拖入制作好的顾客 Prefab")]
     public GameObject customerPrefab;
-    [Tooltip("拖入 CustomerSpawnPoint 根节点")]
     public Transform spawnPointParent;
-    [Tooltip("拖入场景中顾客结账后离开的统一出口点")]
-    public Transform exitPoint; // 【新增】由 GameManager 统一管理出口点
+    public Transform exitPoint;
 
     [Header("图标配置字典")]
     public List<ItemIconMapping> itemIconDatabase = new List<ItemIconMapping>();
@@ -46,6 +45,29 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 【新增核心】：智能分配最空闲的收银台给顾客
+    /// </summary>
+    public CheckoutCounter GetBestCheckoutCounter()
+    {
+        if (allCheckoutCounters == null || allCheckoutCounters.Count == 0) return null;
+
+        CheckoutCounter bestCounter = null;
+        int minQueue = int.MaxValue;
+
+        // 遍历所有激活的收银台，寻找排队人数最少的
+        foreach (var counter in allCheckoutCounters)
+        {
+            if (counter.gameObject.activeInHierarchy && counter.customerQueue.Count < minQueue)
+            {
+                bestCounter = counter;
+                minQueue = counter.customerQueue.Count;
+            }
+        }
+
+        return bestCounter;
+    }
+
     public int GetNextCustomerCost()
     {
         if (currentCustomerCapacity < maxCustomerCapacity)
@@ -56,11 +78,6 @@ public class GameManager : MonoBehaviour
     public bool TryBuyCustomer()
     {
         if (currentCustomerCapacity >= maxCustomerCapacity) return false;
-
-        int cost = GetNextCustomerCost();
-        // 预留扣钱逻辑
-        // if (PlayerWallet.Coins < cost) return false;
-        // PlayerWallet.Coins -= cost;
 
         currentCustomerCapacity++;
         SpawnSingleCustomer();
@@ -79,10 +96,7 @@ public class GameManager : MonoBehaviour
 
         List<ShoppingRequest> dynamicList = GenerateDynamicShoppingList();
 
-        if (customerAI != null)
-        {
-            customerAI.InjectShoppingList(dynamicList);
-        }
+        if (customerAI != null) customerAI.InjectShoppingList(dynamicList);
 
         currentActiveCustomers++;
     }
@@ -97,9 +111,7 @@ public class GameManager : MonoBehaviour
             if (shelf.gameObject.activeInHierarchy && shelf.acceptedItemType != ItemType.None)
             {
                 if (!unlockedItems.Contains(shelf.acceptedItemType))
-                {
                     unlockedItems.Add(shelf.acceptedItemType);
-                }
             }
         }
 
@@ -115,22 +127,17 @@ public class GameManager : MonoBehaviour
             ItemType wantedType = unlockedItems[i];
             ShoppingRequest newReq = new ShoppingRequest();
             newReq.itemType = wantedType;
-
             newReq.targetAmount = Random.Range(1, 4);
 
             if (totalItemsCount + newReq.targetAmount > 12)
-            {
                 newReq.targetAmount = 12 - totalItemsCount;
-            }
 
             if (newReq.targetAmount <= 0) break;
 
             newReq.itemIcon = GetIconForType(wantedType);
             requests.Add(newReq);
-
             totalItemsCount += newReq.targetAmount;
         }
-
         return requests;
     }
 
