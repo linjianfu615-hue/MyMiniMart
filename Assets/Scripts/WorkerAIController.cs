@@ -138,16 +138,28 @@ public class WorkerAIController : BaseCharacterController
 
         ItemType? holdingType = GetHoldingItemType();
 
+        // =========================================================
+        // 【第一阶段：进货】 (根据模板，智能读取配方缺口并按紧急度排序)
+        // =========================================================
         if (!IsFull)
         {
+            WorkerTask bestTask = null;
+            BaseProductionMachine bestSource = null;
+            string bestLock = "";
+
+            // 记录最高优先级分数（即最大缺口数量）
+            int maxUrgencyScore = -1;
+
             foreach (var task in tasks)
             {
                 List<ItemType> neededTypes = GetNeededTypesForTemplate(task);
 
                 foreach (ItemType neededType in neededTypes)
                 {
+                    // 如果手里已经拿了东西，只能继续进相同类型的货
                     if (holdingType.HasValue && holdingType.Value != neededType) continue;
 
+                    // 获取该类型的总缺口数量
                     int totalMissing = GetTotalMissingNeedsForTemplate(task, neededType);
 
                     if (totalMissing > 0 && carriedItems.Count < totalMissing)
@@ -155,17 +167,34 @@ public class WorkerAIController : BaseCharacterController
                         BaseProductionMachine availableSource = FindAvailableSourceFromManager(neededType);
                         if (availableSource != null)
                         {
-                            task.dynamicSource = availableSource;
-                            currentTask = task;
-                            ClaimLock(availableSource.GetInstanceID() + "_Out");
-                            GoToDestination(task.GetSourcePosition(), AIState.MovingToSource);
-                            return;
+                            // 【核心优化】：比较优先级
+                            // 缺口越大的货架（比如缺9个的西红柿），它的 totalMissing 越大，得分就越高，AI 就会优先去拿它！
+                            if (totalMissing > maxUrgencyScore)
+                            {
+                                maxUrgencyScore = totalMissing;
+                                bestTask = task;
+                                bestSource = availableSource;
+                                bestLock = availableSource.GetInstanceID() + "_Out";
+                            }
                         }
                     }
                 }
             }
+
+            // 如果找到了最紧急的任务（也就是 maxUrgencyScore 最大的任务）
+            if (bestTask != null)
+            {
+                bestTask.dynamicSource = bestSource;
+                currentTask = bestTask;
+                ClaimLock(bestLock);
+                GoToDestination(bestTask.GetSourcePosition(), AIState.MovingToSource);
+                return;
+            }
         }
 
+        // =========================================================
+        // 【第二阶段：送货】 (寻找符合模板的真实机器投递)
+        // =========================================================
         if (HasItems && holdingType.HasValue)
         {
             bool isAllTargetsReallyFull = true;
@@ -242,6 +271,9 @@ public class WorkerAIController : BaseCharacterController
             }
         }
 
+        // =========================================================
+        // 【第三阶段：回家】
+        // =========================================================
         if (!HasItems)
         {
             float distToHome = Vector3.Distance(transform.position, startPosition);
@@ -376,10 +408,6 @@ public class WorkerAIController : BaseCharacterController
             {
                 if (runtimeShelf.acceptedItemType == task.targetShelf.acceptedItemType && runtimeShelf.acceptedItemType == type && !runtimeShelf.IsFull)
                 {
-                    // ===============================================================
-                    // 【已修复 BUG】：读取真实的货架缺口数据 (MissingCount)
-                    // 不再盲目填充，货架缺几个，这里就加上几个！
-                    // ===============================================================
                     totalNeed += runtimeShelf.MissingCount;
                 }
             }
