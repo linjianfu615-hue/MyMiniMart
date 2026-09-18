@@ -1,70 +1,164 @@
 using UnityEngine;
 using System.Collections.Generic;
+using DG.Tweening;
 
-/// <summary>
-/// 独立的收银台管理器，用于管理属于自己的顾客队列和坐标点
-/// </summary>
 public class CheckoutCounter : MonoBehaviour
 {
     [Header("收银台节点配置")]
-    [Tooltip("顾客站立付款的位置 (payment_Point)")]
     public Transform paymentPoint;
-    [Tooltip("打包纸箱生成的起点 (boxPoint)")]
     public Transform boxPoint;
 
     [Header("排队配置")]
-    [Tooltip("排队时人与人之间的基础间距")]
     public float queueSpacing = 3.5f;
 
-    // 属于这个特定收银台的排队队列
+    [Header("钞票排版与生成配置")]
+    [Tooltip("钞票的预制体 (cash)")]
+    public GameObject cashPrefab;
+
+    [Tooltip("拖入 Output 空节点，作为所有生成钞票的父物体")]
+    public Transform cashOutputParent;
+
+    [Tooltip("第一张钞票的初始局部坐标")]
+    public Vector3 startLocalPos = new Vector3(3f, 2.4f, -1f);
+
+    [Tooltip("钞票生成的默认旋转角度")]
+    public Vector3 cashRotation = new Vector3(0f, 90f, 0f);
+
+    [Header("3D 矩阵堆叠参数")]
+    [Tooltip("X轴方向（横向）一排最多放几个")]
+    public int itemsPerRowX = 4;
+
+    [Tooltip("Z轴方向（纵向）最多放几排")]
+    public int itemsPerColZ = 2;
+
+    [Tooltip("X轴方向的间距")]
+    public float spacingX = 1.5f;
+
+    [Tooltip("Z轴方向的间距")]
+    public float spacingZ = 1.86f;
+
+    [Tooltip("Y轴方向（向上堆叠）的层高间距")]
+    public float spacingY = 0.9f;
+
+    [Tooltip("同屏最多允许存在多少个钞票实体模型（超过此数量只增加面值）")]
+    public int maxVisualCashCount = 80;
+
     [HideInInspector]
     public List<CustomerAIController> customerQueue = new List<CustomerAIController>();
 
-    /// <summary>
-    /// 顾客加入当前收银台队列
-    /// </summary>
+    private List<GameObject> activeCashList = new List<GameObject>();
+
     public void JoinQueue(CustomerAIController customer)
     {
-        if (!customerQueue.Contains(customer))
-        {
-            customerQueue.Add(customer);
-        }
+        if (!customerQueue.Contains(customer)) customerQueue.Add(customer);
     }
 
-    /// <summary>
-    /// 顾客离开当前收银台队列
-    /// </summary>
     public void LeaveQueue(CustomerAIController customer)
     {
-        if (customerQueue.Contains(customer))
-        {
-            customerQueue.Remove(customer);
-        }
+        if (customerQueue.Contains(customer)) customerQueue.Remove(customer);
     }
 
-    /// <summary>
-    /// 动态计算顾客在当前队列中的精确坐标位置（包含推车防穿模计算）
-    /// </summary>
     public Vector3 GetQueuePosition(CustomerAIController customer)
     {
         int index = customerQueue.IndexOf(customer);
-
-        // 如果还没入队（还在路上），以当前队尾为目标
         if (index == -1) index = customerQueue.Count;
 
         float offset = 0f;
         for (int i = 1; i <= index; i++)
         {
             float space = queueSpacing;
-
-            // 判断当前占位的人是否有推车
             bool hasTrolley = (i < customerQueue.Count) ? customerQueue[i].HasTrolley : customer.HasTrolley;
-            if (hasTrolley) space += 3.0f; // 推车额外间距
-
+            if (hasTrolley) space += 3.0f;
             offset += space;
         }
-
-        // 沿着收银台 paymentPoint 的反向 right 延伸队伍
         return paymentPoint.position - paymentPoint.right * offset;
+    }
+
+    /// <summary>
+    /// 生成实体钞票（采用 3D 网格数学动态计算位置）
+    /// </summary>
+    public void GenerateCash(int value)
+    {
+        if (cashPrefab == null || cashOutputParent == null) return;
+
+        if (activeCashList.Count < maxVisualCashCount)
+        {
+            int currentIndex = activeCashList.Count;
+
+            // 【核心排版算法：3D 矩阵展开】
+            int itemsPerLayer = itemsPerRowX * itemsPerColZ; // 每层 4*2=8 个
+
+            int layer = currentIndex / itemsPerLayer;             // 当前在第几层 (Y)
+            int indexInLayer = currentIndex % itemsPerLayer;      // 在当前层的第几个 (0~7)
+
+            int zRow = indexInLayer / itemsPerRowX;               // 在当前层的第几排 (Z)
+            int xCol = indexInLayer % itemsPerRowX;               // 在当前排的第几列 (X)
+
+            // 计算精准的相对坐标
+            Vector3 targetLocalPos = new Vector3(
+                startLocalPos.x + (xCol * spacingX),
+                startLocalPos.y + (layer * spacingY),
+                startLocalPos.z + (zRow * spacingZ)
+            );
+
+            // 实例化并挂载
+            GameObject cash = Instantiate(cashPrefab, cashOutputParent);
+            cash.transform.localPosition = targetLocalPos;
+            cash.transform.localRotation = Quaternion.Euler(cashRotation);
+
+            // 记录真实价值
+            CashData cd = cash.AddComponent<CashData>();
+            cd.value = value;
+
+            // 弹出动画
+            cash.transform.localScale = Vector3.zero;
+            cash.transform.DOScale(Vector3.one, 0.3f).SetEase(Ease.OutBack);
+
+            activeCashList.Add(cash);
+        }
+        else
+        {
+            // 达到上限，直接把钱塞给最顶层的一张钞票
+            GameObject lastCash = activeCashList[activeCashList.Count - 1];
+            CashData cd = lastCash.GetComponent<CashData>();
+            if (cd != null) cd.value += value;
+
+            lastCash.transform.DOKill(true);
+            lastCash.transform.DOPunchScale(Vector3.one * 0.3f, 0.2f);
+        }
+    }
+
+    /// <summary>
+    /// 供玩家拿走钞票，返回这叠钞票包含的真实价值
+    /// </summary>
+    public int TakeCashAndGetValue()
+    {
+        if (activeCashList.Count == 0) return 0;
+
+        // 后进先出，从最高层/最后面开始拿
+        int lastIndex = activeCashList.Count - 1;
+        GameObject lastCash = activeCashList[lastIndex];
+        activeCashList.RemoveAt(lastIndex);
+
+        int moneyValue = 0;
+        CashData cd = lastCash.GetComponent<CashData>();
+        if (cd != null) moneyValue = cd.value;
+
+        Destroy(lastCash);
+        return moneyValue;
+    }
+
+    /// <summary>
+    /// 供玩家吸收钞票使用，交出最后一张钞票的实体控制权
+    /// </summary>
+    public GameObject TakeCashEntity()
+    {
+        if (activeCashList.Count == 0) return null;
+
+        int lastIndex = activeCashList.Count - 1;
+        GameObject lastCash = activeCashList[lastIndex];
+        activeCashList.RemoveAt(lastIndex); // 从收银台列表中除名
+
+        return lastCash; // 交给玩家去处理吸收动画和销毁
     }
 }

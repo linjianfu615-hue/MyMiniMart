@@ -1,4 +1,33 @@
 {
+    "prices": [{
+            "itemType": "Egg",
+            "price": 5
+        },
+        {
+            "itemType": "Tomato",
+            "price": 8
+        },
+        {
+            "itemType": "Wheat",
+            "price": 4
+        },
+        {
+            "itemType": "Bread",
+            "price": 15
+        },
+        {
+            "itemType": "Milk",
+            "price": 12
+        },
+        {
+            "itemType": "TomatoSauce",
+            "price": 20
+        },
+        {
+            "itemType": "FlourBag",
+            "price": 10
+        }
+    ],
     "level_1_upgrades": {
         "workers": [{
                 "id": "player",

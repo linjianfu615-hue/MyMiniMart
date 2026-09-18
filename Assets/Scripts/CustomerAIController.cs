@@ -300,6 +300,7 @@ public class CustomerAIController : MonoBehaviour
 
         if (boxInstance != null)
         {
+            // ... 纸箱开启动画 ...
             Transform inputGray = boxInstance.transform.Find("Input_Gray");
             if (inputGray != null)
             {
@@ -315,10 +316,33 @@ public class CustomerAIController : MonoBehaviour
                     item.transform.DOLocalJump(Vector3.zero, 1.5f, 1, 0.25f);
                     item.transform.DOLocalRotate(Vector3.zero, 0.25f);
 
+                    // ==========================================
+                    // 智能钞票拆分生成
+                    // ==========================================
+                    ItemData itemData = item.GetComponent<ItemData>();
+                    if (itemData != null && targetCheckoutCounter != null && GameManager.Instance != null)
+                    {
+                        // 从 GameManager (最终是 json) 读取真实价格
+                        int price = GameManager.Instance.GetItemPrice(itemData.itemType);
+
+                        // 算法：基础1沓，每多 5 块钱多分裂1沓，单件商品最多弹出 3 沓钞票
+                        int cashAmountToSpawn = Mathf.Clamp(price / 5, 1, 5);
+
+                        // 将价格平分，余数塞给第一沓
+                        int valuePerCash = price / cashAmountToSpawn;
+                        int remainder = price % cashAmountToSpawn;
+
+                        for (int j = 0; j < cashAmountToSpawn; j++)
+                        {
+                            int finalValue = valuePerCash + (j == 0 ? remainder : 0);
+                            targetCheckoutCounter.GenerateCash(finalValue);
+                        }
+                    }
+
                     yield return new WaitForSeconds(0.15f);
                 }
             }
-            yield return new WaitForSeconds(0.3f);
+            // ... 纸箱关闭动画 ...
 
             Animation boxAnim = boxInstance.GetComponent<Animation>();
             if (boxAnim != null)
@@ -371,7 +395,6 @@ public class CustomerAIController : MonoBehaviour
             thoughtBubble.SetActive(false);
         }
 
-        // 离开场景不需要过于精确，0.5f 足够
         agent.stoppingDistance = 0.5f;
         agent.isStopped = false;
 

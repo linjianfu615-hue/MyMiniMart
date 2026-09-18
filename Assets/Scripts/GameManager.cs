@@ -8,12 +8,23 @@ public class ItemIconMapping
     public Sprite itemIcon;
 }
 
+[System.Serializable]
+public class ItemPriceMapping
+{
+    public ItemType itemType;
+    public int price;
+}
+
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    [Header("玩家财富")]
+    public int totalCash = 0;
+    // 负责广播金币变化的事件
+    public System.Action<int> OnCashChanged;
+
     [Header("收银台管理 (支持多收银台)")]
-    [Tooltip("将场景中所有挂载了 CheckoutCounter 的收银台拖入此列表")]
     public List<CheckoutCounter> allCheckoutCounters = new List<CheckoutCounter>();
 
     [Header("顾客生成配置")]
@@ -21,8 +32,9 @@ public class GameManager : MonoBehaviour
     public Transform spawnPointParent;
     public Transform exitPoint;
 
-    [Header("图标配置字典")]
+    [Header("物品配置字典")]
     public List<ItemIconMapping> itemIconDatabase = new List<ItemIconMapping>();
+    public List<ItemPriceMapping> itemPriceDatabase = new List<ItemPriceMapping>();
 
     [Header("升级数据")]
     public int currentCustomerCapacity = 1;
@@ -46,8 +58,23 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 【新增核心】：智能分配最空闲的收银台给顾客
+    /// 【核心方法】：给玩家加钱，并强制通知 UI 刷新
     /// </summary>
+    public void AddCash(int amount)
+    {
+        totalCash += amount;
+        OnCashChanged?.Invoke(totalCash);
+    }
+
+    public int GetItemPrice(ItemType type)
+    {
+        foreach (var mapping in itemPriceDatabase)
+        {
+            if (mapping.itemType == type) return mapping.price;
+        }
+        return 5;
+    }
+
     public CheckoutCounter GetBestCheckoutCounter()
     {
         if (allCheckoutCounters == null || allCheckoutCounters.Count == 0) return null;
@@ -55,7 +82,6 @@ public class GameManager : MonoBehaviour
         CheckoutCounter bestCounter = null;
         int minQueue = int.MaxValue;
 
-        // 遍历所有激活的收银台，寻找排队人数最少的
         foreach (var counter in allCheckoutCounters)
         {
             if (counter.gameObject.activeInHierarchy && counter.customerQueue.Count < minQueue)
@@ -64,7 +90,6 @@ public class GameManager : MonoBehaviour
                 minQueue = counter.customerQueue.Count;
             }
         }
-
         return bestCounter;
     }
 
@@ -95,7 +120,6 @@ public class GameManager : MonoBehaviour
         CustomerAIController customerAI = newCustomerObj.GetComponent<CustomerAIController>();
 
         List<ShoppingRequest> dynamicList = GenerateDynamicShoppingList();
-
         if (customerAI != null) customerAI.InjectShoppingList(dynamicList);
 
         currentActiveCustomers++;
