@@ -42,7 +42,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1384459860192126501}
   - component: {fileID: 5293689791616768734}
-  m_Layer: 0
+  m_Layer: 6
   m_HasEditorInfo: 1
   m_Name: packagingBox
   m_TagString: Untagged

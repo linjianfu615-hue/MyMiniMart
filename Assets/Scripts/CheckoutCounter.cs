@@ -8,6 +8,12 @@ public class CheckoutCounter : MonoBehaviour
     public Transform paymentPoint;
     public Transform boxPoint;
 
+    [Header("收银员动画配置")]
+    [Tooltip("拖入站在收银台里的收银员模型 (带有 Animation 组件)")]
+    public Animation cashierAnim;
+    public string animIdle = "Idle_Happy";
+    public string animWork = "Idle_Happy_Carry";
+
     [Header("排队配置")]
     public float queueSpacing = 3.5f;
 
@@ -47,6 +53,43 @@ public class CheckoutCounter : MonoBehaviour
     public List<CustomerAIController> customerQueue = new List<CustomerAIController>();
 
     private List<GameObject> activeCashList = new List<GameObject>();
+    private bool isWorking = false;
+
+    private void Start()
+    {
+        // 初始状态播放空闲动画
+        if (cashierAnim != null && cashierAnim[animIdle] != null)
+        {
+            cashierAnim.Play(animIdle);
+            isWorking = false;
+        }
+    }
+
+    private void Update()
+    {
+        // 动态监控队列，控制收银员动画状态
+        if (cashierAnim != null)
+        {
+            bool hasCustomer = customerQueue.Count > 0;
+
+            if (hasCustomer && !isWorking)
+            {
+                isWorking = true;
+                if (cashierAnim[animWork] != null)
+                {
+                    cashierAnim.CrossFade(animWork, 0.2f);
+                }
+            }
+            else if (!hasCustomer && isWorking)
+            {
+                isWorking = false;
+                if (cashierAnim[animIdle] != null)
+                {
+                    cashierAnim.CrossFade(animIdle, 0.2f);
+                }
+            }
+        }
+    }
 
     public void JoinQueue(CustomerAIController customer)
     {
@@ -107,7 +150,11 @@ public class CheckoutCounter : MonoBehaviour
             cash.transform.localRotation = Quaternion.Euler(cashRotation);
 
             // 记录真实价值
-            CashData cd = cash.AddComponent<CashData>();
+            CashData cd = cash.GetComponent<CashData>();
+            if (cd == null)
+            {
+                cd = cash.AddComponent<CashData>();
+            }
             cd.value = value;
 
             // 弹出动画
