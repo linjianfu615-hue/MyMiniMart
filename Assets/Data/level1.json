@@ -28,6 +28,62 @@
             "price": 10
         }
     ],
+    "unlock_sequence": [{
+            "id": "tomato_shelf",
+            "name": "西红柿货架",
+            "cost": 50
+        },
+        {
+            "id": "blender",
+            "name": "番茄搅拌机",
+            "cost": 150
+        },
+        {
+            "id": "tomato_sauce_shelf",
+            "name": "番茄罐头货架",
+            "cost": 250
+        },
+        {
+            "id": "wheat_field",
+            "name": "小麦地",
+            "cost": 400
+        },
+        {
+            "id": "wheat_shelf",
+            "name": "小麦货架",
+            "cost": 500
+        },
+        {
+            "id": "wheat_mill",
+            "name": "小麦磨粉机",
+            "cost": 800
+        },
+        {
+            "id": "flour_shelf",
+            "name": "面粉货架",
+            "cost": 1000
+        },
+        {
+            "id": "cow",
+            "name": "奶牛",
+            "cost": 1500
+        },
+        {
+            "id": "fridge",
+            "name": "冰箱",
+            "cost": 2000
+        },
+        {
+            "id": "bread_oven",
+            "name": "面包机",
+            "cost": 2500
+        },
+        {
+            "id": "bread_shelf",
+            "name": "面包货架",
+            "cost": 3000
+        }
+    ],
     "level_1_upgrades": {
         "workers": [{
                 "id": "player",

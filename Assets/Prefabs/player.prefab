@@ -294,7 +294,7 @@ GameObject:
   m_Layer: 0
   m_HasEditorInfo: 1
   m_Name: player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -387,8 +387,8 @@ MonoBehaviour:
   animRun: Run
   animIdleCarry: Idle_Happy_Carry
   animRunCarry: Run_Carry
-  minDragThreshold: 10
-  joystickMaxRadius: 100
+  joystick: {fileID: 0}
+  joystickDeadzone: 0.1
 --- !u!1 &2608026234012737754
 GameObject:
   m_ObjectHideFlags: 0

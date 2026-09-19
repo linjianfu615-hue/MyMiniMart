@@ -68,9 +68,29 @@ public class GameManager : MonoBehaviour
 
     public int GetItemPrice(ItemType type)
     {
+        int jsonPrice = 0;
+
+        // 尝试从新写的 LevelDataManager 中直接读取 JSON 配置的价格
+        if (LevelDataManager.Instance != null)
+        {
+            jsonPrice = LevelDataManager.Instance.GetPriceFromJson(type.ToString());
+        }
+
+        // 如果 JSON 里有这个价格，就用 JSON 的
+        if (jsonPrice > 0)
+        {
+            return jsonPrice;
+        }
+
+        // ==========================================
+        // 兼容你以前的面板配置和防呆保底逻辑
+        // ==========================================
         foreach (var mapping in itemPriceDatabase)
         {
-            if (mapping.itemType == type) return mapping.price;
+            if (mapping.itemType == type)
+            {
+                return mapping.price > 0 ? mapping.price : 5;
+            }
         }
         return 5;
     }
