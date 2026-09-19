@@ -5,12 +5,9 @@ using System.Collections.Generic;
 [System.Serializable]
 public class WorkerTask
 {
-    [Header("任务目标配置 (作为类型参考模板即可)")]
-    [Tooltip("例如拖入一个面包机，AI会自动寻找全图所有的面包机，并自动为其凑齐配方原料")]
     public ShelfManager targetShelf;
     public ConsumeProductionMachine targetMachine;
 
-    // 运行时动态锁定的具体实例
     [HideInInspector] public BaseProductionMachine dynamicSource;
     [HideInInspector] public ShelfManager dynamicTargetShelf;
     [HideInInspector] public ConsumeProductionMachine dynamicTargetMachine;
@@ -69,6 +66,12 @@ public class WorkerAIController : BaseCharacterController
     private static HashSet<string> globalLocks = new HashSet<string>();
     private string myCurrentLock = "";
 
+    // 【新增】：员工专用的雷达缓存矩阵
+    private static ShelfManager[] cachedShelves;
+    private static ConsumeProductionMachine[] cachedConsumers;
+    private static BaseProductionMachine[] cachedProducers;
+    private static float lastCacheTime = -1f;
+
     protected override void Awake()
     {
         base.Awake();
@@ -80,6 +83,20 @@ public class WorkerAIController : BaseCharacterController
     private void OnDisable()
     {
         ReleaseLock();
+    }
+
+    // =========================================================
+    // 【完美防呆逻辑】：全局统一扫描场景
+    // =========================================================
+    private void UpdateCaches()
+    {
+        if (Time.time - lastCacheTime > 1.0f || cachedShelves == null)
+        {
+            cachedShelves = FindObjectsOfType<ShelfManager>();
+            cachedConsumers = FindObjectsOfType<ConsumeProductionMachine>();
+            cachedProducers = FindObjectsOfType<BaseProductionMachine>();
+            lastCacheTime = Time.time;
+        }
     }
 
     private void Update()
@@ -95,27 +112,21 @@ public class WorkerAIController : BaseCharacterController
             case AIState.ReturningHome:
                 FindNextTask();
                 break;
-
             case AIState.MovingToSource:
                 if (HasReachedDestination()) ChangeState(AIState.Collecting);
                 break;
-
             case AIState.Collecting:
                 HandleCollection();
                 break;
-
             case AIState.MovingToDest:
                 if (HasReachedDestination()) ChangeState(AIState.Delivering);
                 break;
-
             case AIState.Delivering:
                 HandleDelivery();
                 break;
-
             case AIState.MovingToTrash:
                 if (HasReachedDestination()) ChangeState(AIState.Trashing);
                 break;
-
             case AIState.Trashing:
                 HandleTrash();
                 break;
@@ -131,23 +142,37 @@ public class WorkerAIController : BaseCharacterController
         }
     }
 
+    private bool IsMachineMatch(ConsumeProductionMachine runtime, ConsumeProductionMachine template)
+    {
+        if (runtime == null || template == null) return false;
+        if (runtime == template) return true; // 直接比对场景实例
+        if (runtime.targetProductPrefab != null && template.targetProductPrefab != null &&
+            runtime.targetProductPrefab == template.targetProductPrefab) return true;
+
+        string runName = runtime.gameObject.name.Replace("(Clone)", "").Trim();
+        string tempName = template.gameObject.name.Replace("(Clone)", "").Trim();
+        return runName.Contains(tempName) || tempName.Contains(runName);
+    }
+
+    private bool IsShelfMatch(ShelfManager runtime, ShelfManager template)
+    {
+        if (runtime == null || template == null) return false;
+        if (runtime == template) return true;
+        return runtime.acceptedItemType == template.acceptedItemType;
+    }
+
     private void FindNextTask()
     {
         ReleaseLock();
-        if (FacilityManager.Instance == null) return;
+        UpdateCaches(); // 每次思考前，刷新雷达
 
         ItemType? holdingType = GetHoldingItemType();
 
-        // =========================================================
-        // 【第一阶段：进货】 (根据模板，智能读取配方缺口并按紧急度排序)
-        // =========================================================
         if (!IsFull)
         {
             WorkerTask bestTask = null;
             BaseProductionMachine bestSource = null;
             string bestLock = "";
-
-            // 记录最高优先级分数（即最大缺口数量）
             int maxUrgencyScore = -1;
 
             foreach (var task in tasks)
@@ -156,10 +181,8 @@ public class WorkerAIController : BaseCharacterController
 
                 foreach (ItemType neededType in neededTypes)
                 {
-                    // 如果手里已经拿了东西，只能继续进相同类型的货
                     if (holdingType.HasValue && holdingType.Value != neededType) continue;
 
-                    // 获取该类型的总缺口数量
                     int totalMissing = GetTotalMissingNeedsForTemplate(task, neededType);
 
                     if (totalMissing > 0 && carriedItems.Count < totalMissing)
@@ -167,8 +190,6 @@ public class WorkerAIController : BaseCharacterController
                         BaseProductionMachine availableSource = FindAvailableSourceFromManager(neededType);
                         if (availableSource != null)
                         {
-                            // 【核心优化】：比较优先级
-                            // 缺口越大的货架（比如缺9个的西红柿），它的 totalMissing 越大，得分就越高，AI 就会优先去拿它！
                             if (totalMissing > maxUrgencyScore)
                             {
                                 maxUrgencyScore = totalMissing;
@@ -181,7 +202,6 @@ public class WorkerAIController : BaseCharacterController
                 }
             }
 
-            // 如果找到了最紧急的任务（也就是 maxUrgencyScore 最大的任务）
             if (bestTask != null)
             {
                 bestTask.dynamicSource = bestSource;
@@ -192,9 +212,6 @@ public class WorkerAIController : BaseCharacterController
             }
         }
 
-        // =========================================================
-        // 【第二阶段：送货】 (寻找符合模板的真实机器投递)
-        // =========================================================
         if (HasItems && holdingType.HasValue)
         {
             bool isAllTargetsReallyFull = true;
@@ -203,9 +220,9 @@ public class WorkerAIController : BaseCharacterController
             {
                 if (task.targetShelf != null)
                 {
-                    foreach (var runtimeShelf in FacilityManager.Instance.allShelves)
+                    foreach (var runtimeShelf in cachedShelves)
                     {
-                        if (runtimeShelf.acceptedItemType == task.targetShelf.acceptedItemType)
+                        if (IsShelfMatch(runtimeShelf, task.targetShelf))
                         {
                             if (runtimeShelf.acceptedItemType == holdingType.Value && !runtimeShelf.IsFull)
                             {
@@ -227,9 +244,9 @@ public class WorkerAIController : BaseCharacterController
 
                 if (task.targetMachine != null)
                 {
-                    foreach (var runtimeMachine in FacilityManager.Instance.allConsumers)
+                    foreach (var runtimeMachine in cachedConsumers)
                     {
-                        if (runtimeMachine.targetProductPrefab == task.targetMachine.targetProductPrefab)
+                        if (IsMachineMatch(runtimeMachine, task.targetMachine))
                         {
                             if (MachineNeedsType(runtimeMachine, holdingType.Value))
                             {
@@ -271,9 +288,6 @@ public class WorkerAIController : BaseCharacterController
             }
         }
 
-        // =========================================================
-        // 【第三阶段：回家】
-        // =========================================================
         if (!HasItems)
         {
             float distToHome = Vector3.Distance(transform.position, startPosition);
@@ -292,8 +306,6 @@ public class WorkerAIController : BaseCharacterController
         if (!sourceType.HasValue) { ChangeState(AIState.Idle); return; }
 
         int totalMissing = GetTotalMissingNeedsForTemplate(currentTask, sourceType.Value);
-
-        // 核心拿取控制逻辑：缺口 - 已经拿在手上的数量 = 还需要拿的数量
         int stillNeedToCollect = totalMissing - carriedItems.Count;
 
         if (IsFull || stillNeedToCollect <= 0 || currentTask.dynamicSource.readyProducts.Count == 0)
@@ -354,14 +366,9 @@ public class WorkerAIController : BaseCharacterController
             interactTimer = 0f;
             GameObject topItem = RemoveTopItem();
             if (topItem != null && trashBin != null) trashBin.ReceiveTrash(topItem);
-
             if (!HasItems) ChangeState(AIState.Idle);
         }
     }
-
-    // =========================================================
-    // 【模板匹配核心算法】
-    // =========================================================
 
     private List<ItemType> GetNeededTypesForTemplate(WorkerTask task)
     {
@@ -369,9 +376,9 @@ public class WorkerAIController : BaseCharacterController
 
         if (task.targetShelf != null)
         {
-            foreach (var runtimeShelf in FacilityManager.Instance.allShelves)
+            foreach (var runtimeShelf in cachedShelves)
             {
-                if (runtimeShelf.acceptedItemType == task.targetShelf.acceptedItemType && !runtimeShelf.IsFull)
+                if (IsShelfMatch(runtimeShelf, task.targetShelf) && !runtimeShelf.IsFull)
                 {
                     if (!neededTypes.Contains(runtimeShelf.acceptedItemType)) neededTypes.Add(runtimeShelf.acceptedItemType);
                 }
@@ -379,9 +386,9 @@ public class WorkerAIController : BaseCharacterController
         }
         else if (task.targetMachine != null)
         {
-            foreach (var runtimeMachine in FacilityManager.Instance.allConsumers)
+            foreach (var runtimeMachine in cachedConsumers)
             {
-                if (runtimeMachine.targetProductPrefab == task.targetMachine.targetProductPrefab)
+                if (IsMachineMatch(runtimeMachine, task.targetMachine))
                 {
                     foreach (var req in runtimeMachine.inputRequirements)
                     {
@@ -396,17 +403,14 @@ public class WorkerAIController : BaseCharacterController
         return neededTypes;
     }
 
-    /// <summary>
-    /// 根据任务模板，计算全场同类机器对某种原料的【总缺口数量】
-    /// </summary>
     private int GetTotalMissingNeedsForTemplate(WorkerTask task, ItemType type)
     {
         int totalNeed = 0;
         if (task.targetShelf != null)
         {
-            foreach (var runtimeShelf in FacilityManager.Instance.allShelves)
+            foreach (var runtimeShelf in cachedShelves)
             {
-                if (runtimeShelf.acceptedItemType == task.targetShelf.acceptedItemType && runtimeShelf.acceptedItemType == type && !runtimeShelf.IsFull)
+                if (IsShelfMatch(runtimeShelf, task.targetShelf) && runtimeShelf.acceptedItemType == type && !runtimeShelf.IsFull)
                 {
                     totalNeed += runtimeShelf.MissingCount;
                 }
@@ -414,9 +418,9 @@ public class WorkerAIController : BaseCharacterController
         }
         else if (task.targetMachine != null)
         {
-            foreach (var runtimeMachine in FacilityManager.Instance.allConsumers)
+            foreach (var runtimeMachine in cachedConsumers)
             {
-                if (runtimeMachine.targetProductPrefab == task.targetMachine.targetProductPrefab)
+                if (IsMachineMatch(runtimeMachine, task.targetMachine))
                 {
                     foreach (var req in runtimeMachine.inputRequirements)
                     {
@@ -430,7 +434,7 @@ public class WorkerAIController : BaseCharacterController
 
     private BaseProductionMachine FindAvailableSourceFromManager(ItemType requiredType)
     {
-        foreach (var source in FacilityManager.Instance.allProducers)
+        foreach (var source in cachedProducers)
         {
             if (source == null || source.readyProducts.Count == 0) continue;
 
@@ -447,8 +451,6 @@ public class WorkerAIController : BaseCharacterController
         }
         return null;
     }
-
-    // ================== 判断与辅助方法 ==================
 
     private bool IsDynamicTargetFull(ShelfManager shelf, ConsumeProductionMachine machine, ItemType type)
     {
@@ -497,8 +499,6 @@ public class WorkerAIController : BaseCharacterController
         }
         return null;
     }
-
-    // ================== 锁机制与寻路 ==================
 
     private void ClaimLock(string lockKey)
     {

@@ -19,9 +19,7 @@ public class CustomerAIController : MonoBehaviour
 {
     [Header("属性配置")]
     public float moveSpeed = 3.5f;
-    [Tooltip("手捧物品时离目标的距离")]
     public float handCarryStoppingDistance = 1.5f;
-    [Tooltip("推推车时离目标的距离")]
     public float trolleyStoppingDistance = 2.5f;
 
     [Header("UI 及 打包设置")]
@@ -32,7 +30,6 @@ public class CustomerAIController : MonoBehaviour
 
     [Header("购物清单配置")]
     public List<ShoppingRequest> shoppingList = new List<ShoppingRequest>();
-
     private List<GameObject> collectedItemObjects = new List<GameObject>();
 
     [Header("UI 气泡组件")]
@@ -58,7 +55,6 @@ public class CustomerAIController : MonoBehaviour
     public string animRunTrolley = "Run_Net";
 
     public float interactRadius = 1.5f;
-
     public bool HasTrolley => useTrolley;
 
     private NavMeshAgent agent;
@@ -68,7 +64,6 @@ public class CustomerAIController : MonoBehaviour
     private int currentRequestIndex = 0;
     private ShelfManager targetShelf;
     private ShelfManager currentOpenShelf;
-
     private CheckoutCounter targetCheckoutCounter;
 
     private bool useTrolley = false;
@@ -76,6 +71,10 @@ public class CustomerAIController : MonoBehaviour
     private float interactTimer = 0f;
     private float interactDelay = 0.3f;
     private bool isPacking = false;
+
+    // 【新增】：雷达缓存
+    private ShelfManager[] cachedShelves;
+    private float lastCacheTime = -1f;
 
     private void Awake()
     {
@@ -93,12 +92,9 @@ public class CustomerAIController : MonoBehaviour
     public void InitCustomer()
     {
         int totalItemsNeeded = 0;
-        foreach (var req in shoppingList)
-        {
-            totalItemsNeeded += req.targetAmount;
-        }
+        foreach (var req in shoppingList) totalItemsNeeded += req.targetAmount;
 
-        useTrolley = (shoppingList.Count > 1) && (totalItemsNeeded >= 3);
+        useTrolley = (shoppingList.Count > 1) && (totalItemsNeeded >= 6);
 
         if (useTrolley)
         {
@@ -131,10 +127,8 @@ public class CustomerAIController : MonoBehaviour
                 {
                     agent.isStopped = true;
                     agent.velocity = Vector3.zero;
-
                     currentOpenShelf = targetShelf;
                     if (currentOpenShelf != null) currentOpenShelf.OnEntityEnter();
-
                     currentState = CustomerState.Collecting;
                 }
                 break;
@@ -158,6 +152,19 @@ public class CustomerAIController : MonoBehaviour
                 HandleLeaving();
                 break;
         }
+    }
+
+    // =========================================================
+    // 【完美防呆逻辑】：同样全自动扫描场景
+    // =========================================================
+    private IEnumerable<ShelfManager> GetActiveShelves()
+    {
+        if (Time.time - lastCacheTime > 1.0f || cachedShelves == null)
+        {
+            cachedShelves = FindObjectsOfType<ShelfManager>();
+            lastCacheTime = Time.time;
+        }
+        return cachedShelves;
     }
 
     private void FindTargetShelf()
@@ -186,19 +193,15 @@ public class CustomerAIController : MonoBehaviour
             return;
         }
 
-        foreach (var shelf in FacilityManager.Instance.allShelves)
+        foreach (var shelf in GetActiveShelves())
         {
-            if (shelf.acceptedItemType == currentReq.itemType)
+            if (shelf.gameObject.activeInHierarchy && shelf.acceptedItemType == currentReq.itemType)
             {
                 targetShelf = shelf;
                 Vector3 targetPos = GetCustomerStandPosition(targetShelf);
                 Vector2 rand = Random.insideUnitCircle * 0.2f;
                 targetPos += new Vector3(rand.x, 0, rand.y);
 
-                // ==========================================
-                // 【已修复】：绝对遵从 Inspector 的距离设置！
-                // 去货架时，完美还原为你填写的参数，不再强制 0.1
-                // ==========================================
                 agent.stoppingDistance = useTrolley ? trolleyStoppingDistance : handCarryStoppingDistance;
                 agent.isStopped = false;
                 agent.SetDestination(targetPos);
@@ -221,7 +224,6 @@ public class CustomerAIController : MonoBehaviour
 
         if (myIndex == -1)
         {
-            // 排队奔跑时临时把误差设小，以便精准入队
             agent.stoppingDistance = 0.2f;
             agent.isStopped = false;
             agent.SetDestination(targetPos);
@@ -236,7 +238,6 @@ public class CustomerAIController : MonoBehaviour
             return;
         }
 
-        // 已经在队伍中时，必须强制脚踩着属于自己的排队圆点（所以队伍中是 0.1）
         agent.stoppingDistance = 0.1f;
         Vector3 myPos2D = new Vector3(transform.position.x, 0, transform.position.z);
         Vector3 myTarget2D = new Vector3(targetPos.x, 0, targetPos.z);
@@ -300,7 +301,6 @@ public class CustomerAIController : MonoBehaviour
 
         if (boxInstance != null)
         {
-            // ... 纸箱开启动画 ...
             Transform inputGray = boxInstance.transform.Find("Input_Gray");
             if (inputGray != null)
             {
@@ -316,19 +316,11 @@ public class CustomerAIController : MonoBehaviour
                     item.transform.DOLocalJump(Vector3.zero, 1.5f, 1, 0.25f);
                     item.transform.DOLocalRotate(Vector3.zero, 0.25f);
 
-                    // ==========================================
-                    // 智能钞票拆分生成
-                    // ==========================================
                     ItemData itemData = item.GetComponent<ItemData>();
                     if (itemData != null && targetCheckoutCounter != null && GameManager.Instance != null)
                     {
-                        // 从 GameManager (最终是 json) 读取真实价格
                         int price = GameManager.Instance.GetItemPrice(itemData.itemType);
-
-                        // 算法：基础1沓，每多 5 块钱多分裂1沓，单件商品最多弹出 3 沓钞票
-                        int cashAmountToSpawn = Mathf.Clamp(price / 5, 1, 5);
-
-                        // 将价格平分，余数塞给第一沓
+                        int cashAmountToSpawn = Mathf.Clamp(price / 5, 1, 3);
                         int valuePerCash = price / cashAmountToSpawn;
                         int remainder = price % cashAmountToSpawn;
 
@@ -338,11 +330,10 @@ public class CustomerAIController : MonoBehaviour
                             targetCheckoutCounter.GenerateCash(finalValue);
                         }
                     }
-
                     yield return new WaitForSeconds(0.15f);
                 }
             }
-            // ... 纸箱关闭动画 ...
+            yield return new WaitForSeconds(0.3f);
 
             Animation boxAnim = boxInstance.GetComponent<Animation>();
             if (boxAnim != null)
@@ -351,15 +342,9 @@ public class CustomerAIController : MonoBehaviour
                 yield return new WaitForSeconds(0.5f);
             }
         }
-        else
-        {
-            yield return new WaitForSeconds(1.0f);
-        }
+        else yield return new WaitForSeconds(1.0f);
 
-        foreach (var item in collectedItemObjects)
-        {
-            if (item != null) Destroy(item);
-        }
+        foreach (var item in collectedItemObjects) if (item != null) Destroy(item);
         collectedItemObjects.Clear();
 
         if (useTrolley)
@@ -378,10 +363,7 @@ public class CustomerAIController : MonoBehaviour
             yield return new WaitForSeconds(0.4f);
         }
 
-        if (targetCheckoutCounter != null)
-        {
-            targetCheckoutCounter.LeaveQueue(this);
-        }
+        if (targetCheckoutCounter != null) targetCheckoutCounter.LeaveQueue(this);
 
         if (happyIcon != null)
         {
@@ -390,32 +372,22 @@ public class CustomerAIController : MonoBehaviour
             iconImage.rectTransform.sizeDelta = new Vector2(200f, 200f);
             numText.text = "";
         }
-        else
-        {
-            thoughtBubble.SetActive(false);
-        }
+        else thoughtBubble.SetActive(false);
 
         agent.stoppingDistance = 0.5f;
         agent.isStopped = false;
 
         if (GameManager.Instance != null && GameManager.Instance.exitPoint != null)
-        {
             agent.SetDestination(GameManager.Instance.exitPoint.position);
-        }
         else
-        {
             agent.SetDestination(transform.position + new Vector3(0, 0, -30f));
-        }
 
         currentState = CustomerState.Leaving;
     }
 
     private void HandleLeaving()
     {
-        if (HasReachedTarget())
-        {
-            Destroy(gameObject);
-        }
+        if (HasReachedTarget()) Destroy(gameObject);
     }
 
     private void OnDestroy()
@@ -430,12 +402,7 @@ public class CustomerAIController : MonoBehaviour
         Transform cSlot = shelf.transform.Find("CustomerSlot");
         if (cSlot != null) return cSlot.position;
 
-        Vector3[] safeDirections = new Vector3[] {
-            shelf.transform.right,
-            -shelf.transform.right,
-            shelf.transform.forward
-        };
-
+        Vector3[] safeDirections = new Vector3[] { shelf.transform.right, -shelf.transform.right, shelf.transform.forward };
         Vector3 pickedDir = safeDirections[Random.Range(0, safeDirections.Length)];
         return shelf.transform.position + pickedDir * 1.2f;
     }
@@ -486,11 +453,7 @@ public class CustomerAIController : MonoBehaviour
     private void AttachItemToCustomer(GameObject item)
     {
         item.transform.DOKill();
-
-        if (!collectedItemObjects.Contains(item))
-        {
-            collectedItemObjects.Add(item);
-        }
+        if (!collectedItemObjects.Contains(item)) collectedItemObjects.Add(item);
 
         if (useTrolley)
         {
@@ -507,9 +470,6 @@ public class CustomerAIController : MonoBehaviour
             item.transform.SetParent(carrySocket);
             item.transform.DOScale(Vector3.one, 0.2f);
 
-            // ==========================================
-            // 【已修复】：Y轴彻底解决了，第一个必定为 0！
-            // ==========================================
             Vector3 targetLocalPos = new Vector3(0, totalCollectedItems * itemHeightOffset, 0);
             item.transform.DOLocalJump(targetLocalPos, 0.5f, 1, 0.3f);
             item.transform.DOLocalRotate(Vector3.zero, 0.3f);
@@ -527,10 +487,7 @@ public class CustomerAIController : MonoBehaviour
             iconImage.rectTransform.sizeDelta = new Vector2(150f, 150f);
             numText.text = $"{currentReq.collectedAmount}/{currentReq.targetAmount}";
         }
-        else
-        {
-            thoughtBubble.SetActive(false);
-        }
+        else thoughtBubble.SetActive(false);
     }
 
     private void PlayAnimation(string animName)
@@ -580,16 +537,12 @@ public class CustomerAIController : MonoBehaviour
     private bool HasReachedTarget()
     {
         if (agent.pathPending) return false;
-
         if (agent.remainingDistance <= agent.stoppingDistance + 0.1f) return true;
 
         if (targetShelf != null)
         {
             float distToShelf = Vector3.Distance(transform.position, targetShelf.transform.position);
-
-            // 为了让停得比较远（如2.5）的推车也能触发交互，我们将交互半径设得和停止距离差不多
             float currentInteractRadius = useTrolley ? trolleyStoppingDistance + 0.5f : interactRadius;
-
             if (distToShelf <= currentInteractRadius && agent.velocity.sqrMagnitude < 0.05f) return true;
         }
 

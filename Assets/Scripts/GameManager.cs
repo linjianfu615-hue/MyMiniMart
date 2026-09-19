@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 [System.Serializable]
@@ -21,7 +22,6 @@ public class GameManager : MonoBehaviour
 
     [Header("玩家财富")]
     public int totalCash = 0;
-    // 负责广播金币变化的事件
     public System.Action<int> OnCashChanged;
 
     [Header("收银台管理 (支持多收银台)")]
@@ -43,23 +43,25 @@ public class GameManager : MonoBehaviour
 
     private int[] upgradeCosts = { 0, 50, 150, 300, 600, 1000, 1500, 2500 };
 
+    // 【新增】：雷达缓存，每秒自动扫描场景，彻底告别手动拖拽！
+    private ShelfManager[] cachedShelves;
+    private float lastCacheTime = -1f;
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
     }
 
-    private void Start()
+    private IEnumerator Start()
     {
+        yield return new WaitForSeconds(0.5f);
         for (int i = 0; i < currentCustomerCapacity; i++)
         {
             SpawnSingleCustomer();
         }
     }
 
-    /// <summary>
-    /// 【核心方法】：给玩家加钱，并强制通知 UI 刷新
-    /// </summary>
     public void AddCash(int amount)
     {
         totalCash += amount;
@@ -69,28 +71,16 @@ public class GameManager : MonoBehaviour
     public int GetItemPrice(ItemType type)
     {
         int jsonPrice = 0;
-
-        // 尝试从新写的 LevelDataManager 中直接读取 JSON 配置的价格
         if (LevelDataManager.Instance != null)
         {
             jsonPrice = LevelDataManager.Instance.GetPriceFromJson(type.ToString());
         }
 
-        // 如果 JSON 里有这个价格，就用 JSON 的
-        if (jsonPrice > 0)
-        {
-            return jsonPrice;
-        }
+        if (jsonPrice > 0) return jsonPrice;
 
-        // ==========================================
-        // 兼容你以前的面板配置和防呆保底逻辑
-        // ==========================================
         foreach (var mapping in itemPriceDatabase)
         {
-            if (mapping.itemType == type)
-            {
-                return mapping.price > 0 ? mapping.price : 5;
-            }
+            if (mapping.itemType == type) return mapping.price > 0 ? mapping.price : 5;
         }
         return 5;
     }
@@ -115,15 +105,13 @@ public class GameManager : MonoBehaviour
 
     public int GetNextCustomerCost()
     {
-        if (currentCustomerCapacity < maxCustomerCapacity)
-            return upgradeCosts[currentCustomerCapacity];
+        if (currentCustomerCapacity < maxCustomerCapacity) return upgradeCosts[currentCustomerCapacity];
         return -1;
     }
 
     public bool TryBuyCustomer()
     {
         if (currentCustomerCapacity >= maxCustomerCapacity) return false;
-
         currentCustomerCapacity++;
         SpawnSingleCustomer();
         return true;
@@ -145,12 +133,25 @@ public class GameManager : MonoBehaviour
         currentActiveCustomers++;
     }
 
+    // =========================================================
+    // 【完美防呆逻辑】：彻底抛弃 FacilityManager，全自动扫描场景
+    // =========================================================
+    private IEnumerable<ShelfManager> GetActiveShelves()
+    {
+        if (Time.time - lastCacheTime > 1.0f || cachedShelves == null)
+        {
+            cachedShelves = FindObjectsOfType<ShelfManager>();
+            lastCacheTime = Time.time;
+        }
+        return cachedShelves;
+    }
+
     private List<ShoppingRequest> GenerateDynamicShoppingList()
     {
         List<ShoppingRequest> requests = new List<ShoppingRequest>();
         List<ItemType> unlockedItems = new List<ItemType>();
 
-        foreach (var shelf in FacilityManager.Instance.allShelves)
+        foreach (var shelf in GetActiveShelves())
         {
             if (shelf.gameObject.activeInHierarchy && shelf.acceptedItemType != ItemType.None)
             {
@@ -173,9 +174,7 @@ public class GameManager : MonoBehaviour
             newReq.itemType = wantedType;
             newReq.targetAmount = Random.Range(1, 4);
 
-            if (totalItemsCount + newReq.targetAmount > 12)
-                newReq.targetAmount = 12 - totalItemsCount;
-
+            if (totalItemsCount + newReq.targetAmount > 12) newReq.targetAmount = 12 - totalItemsCount;
             if (newReq.targetAmount <= 0) break;
 
             newReq.itemIcon = GetIconForType(wantedType);
